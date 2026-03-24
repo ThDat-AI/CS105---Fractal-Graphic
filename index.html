@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fractal Explorer — WebGL</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- Background grid -->
+  <div class="bg-grid"></div>
+  <div class="scanlines"></div>
+
+  <header>
+    <div class="logo">
+      <span class="logo-bracket">[</span>
+      FRACTAL
+      <span class="logo-accent">ENGINE</span>
+      <span class="logo-bracket">]</span>
+    </div>
+    <div class="header-tag">WebGL — Recursive Geometry Explorer v1.0</div>
+  </header>
+
+  <main>
+    <!-- Control Panel -->
+    <aside class="control-panel" id="controlPanel">
+      <div class="panel-header">
+        <span class="panel-dot"></span>
+        <span class="panel-dot"></span>
+        <span class="panel-dot"></span>
+        <span class="panel-title">CONTROL MATRIX</span>
+      </div>
+
+      <!-- Fractal selector -->
+      <div class="control-group">
+        <label class="ctrl-label">FRACTAL TYPE</label>
+        <div class="select-wrapper">
+          <select id="fractalSelect">
+            <option value="koch">Koch Snowflake — Bông Tuyết Koch</option>
+            <option value="minkowski">Minkowski Island — Đảo Minkowski</option>
+            <option value="sierpinski_triangle">Sierpiński Triangle — Tam Giác Sierpiński</option>
+            <option value="sierpinski_carpet">Sierpiński Carpet — Hình Vuông Sierpiński</option>
+            <option value="mandelbrot">Mandelbrot Set</option>
+            <option value="julia">Julia Set</option>
+          </select>
+          <div class="select-arrow">▾</div>
+        </div>
+      </div>
+
+      <!-- Dynamic params container -->
+      <div id="paramsContainer"></div>
+
+      <!-- Actions -->
+      <div class="control-group actions">
+        <button class="btn-primary" id="renderBtn">
+          <span class="btn-icon">▶</span> RENDER
+        </button>
+        <button class="btn-secondary" id="resetBtn">
+          <span class="btn-icon">↺</span> RESET
+        </button>
+      </div>
+
+      <!-- Info box -->
+      <div class="info-box" id="infoBox">
+        <div class="info-title">INFO</div>
+        <p id="infoText">Chọn một fractal và nhấn RENDER để bắt đầu.</p>
+      </div>
+
+      <!-- Render stats -->
+      <div class="stats-row">
+        <div class="stat"><span class="stat-label">FPS</span><span class="stat-val" id="statFps">—</span></div>
+        <div class="stat"><span class="stat-label">TYPE</span><span class="stat-val" id="statType">—</span></div>
+        <div class="stat"><span class="stat-label">ITER</span><span class="stat-val" id="statIter">—</span></div>
+      </div>
+    </aside>
+
+    <!-- Canvas area -->
+    <section class="canvas-section">
+      <div class="canvas-wrapper">
+        <canvas id="glCanvas"></canvas>
+        <div class="canvas-overlay" id="canvasOverlay">
+          <div class="overlay-text">
+            <div class="overlay-icon">◈</div>
+            <div>Chọn fractal và nhấn <strong>RENDER</strong></div>
+          </div>
+        </div>
+        <div class="canvas-corner tl"></div>
+        <div class="canvas-corner tr"></div>
+        <div class="canvas-corner bl"></div>
+        <div class="canvas-corner br"></div>
+      </div>
+      <div class="canvas-label" id="canvasLabel">NO SIGNAL</div>
+    </section>
+  </main>
+
+  <footer>
+    <span>WebGL Fractal Explorer</span>
+    <span class="footer-sep">·</span>
+    <span>Koch · Minkowski · Sierpiński · Mandelbrot · Julia</span>
+    <span class="footer-sep">·</span>
+    <span>2026</span>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="scripts/params-config.js"></script>
+  <script src="scripts/ui.js"></script>
+  <script src="scripts/webgl-utils.js"></script>
+  <script src="scripts/koch.js"></script>
+  <script src="scripts/main.js"></script>
+</body>
+</html>

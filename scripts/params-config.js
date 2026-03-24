@@ -1,0 +1,148 @@
+// scripts/params-config.js
+// Cấu hình tham số cho từng loại fractal
+
+const FRACTAL_PARAMS = {
+  koch: {
+    label: 'Koch Snowflake — Bông Tuyết Koch',
+    info: 'Bông tuyết Koch là fractal tạo bằng cách thay thế đoạn giữa của mỗi cạnh tam giác bằng hai cạnh nhọn. Mỗi cấp độ tăng số cạnh lên 4 lần.',
+    params: [
+      {
+        id: 'koch_levels',
+        name: 'Levels (Cấp độ đệ quy)',
+        type: 'range', min: 1, max: 7, step: 1, default: 4,
+        hint: 'Số lần lặp. Level 7 có thể chậm hơn.'
+      },
+      {
+        id: 'koch_color_inner',
+        name: 'Inner Color',
+        type: 'color', default: '#0077cc'
+      },
+      {
+        id: 'koch_color_outer',
+        name: 'Outer Color',
+        type: 'color', default: '#1a9e3f'
+      },
+      {
+        id: 'koch_bg',
+        name: 'Background Color',
+        type: 'color', default: '#f8fbff'
+      },
+      {
+        id: 'koch_scale',
+        name: 'Scale (Thu phóng)',
+        type: 'range', min: 0.3, max: 1.0, step: 0.05, default: 0.8,
+        hint: 'Kích thước bông tuyết trong canvas.'
+      }
+    ]
+  },
+
+  minkowski: {
+    label: 'Minkowski Island — Đảo Minkowski',
+    info: 'Đảo Minkowski (chưa cài đặt). Tương tự Koch nhưng mỗi đoạn được thay bởi 8 đoạn nhỏ hơn tạo thành hình vuông lồi. Sẽ được cài đặt trong phiên bản tiếp theo.',
+    params: [
+      {
+        id: 'mink_levels',
+        name: 'Levels (Cấp độ đệ quy)',
+        type: 'range', min: 1, max: 5, step: 1, default: 3
+      },
+      {
+        id: 'mink_color',
+        name: 'Line Color',
+        type: 'color', default: '#ff6b35'
+      }
+    ]
+  },
+
+  sierpinski_triangle: {
+    label: 'Sierpiński Triangle — Tam Giác Sierpiński',
+    info: 'Tam giác Sierpiński (chưa cài đặt). Tạo bằng cách chia đệ quy một tam giác thành 4 tam giác nhỏ và loại bỏ tam giác ở giữa. Sẽ được cài đặt trong phiên bản tiếp theo.',
+    params: [
+      {
+        id: 'sier_t_levels',
+        name: 'Levels (Cấp độ đệ quy)',
+        type: 'range', min: 1, max: 9, step: 1, default: 6
+      },
+      {
+        id: 'sier_t_color',
+        name: 'Triangle Color',
+        type: 'color', default: '#cc44ff'
+      },
+      {
+        id: 'sier_t_bg',
+        name: 'Background Color',
+        type: 'color', default: '#000000'
+      }
+    ]
+  },
+
+  sierpinski_carpet: {
+    label: 'Sierpiński Carpet — Hình Vuông Sierpiński',
+    info: 'Thảm Sierpiński (chưa cài đặt). Mỗi hình vuông được chia thành 9 ô vuông nhỏ và ô giữa bị xóa đi, lặp lại đệ quy. Sẽ được cài đặt trong phiên bản tiếp theo.',
+    params: [
+      {
+        id: 'sier_c_levels',
+        name: 'Levels (Cấp độ đệ quy)',
+        type: 'range', min: 1, max: 6, step: 1, default: 4
+      },
+      {
+        id: 'sier_c_color',
+        name: 'Fill Color',
+        type: 'color', default: '#ff3366'
+      }
+    ]
+  },
+
+  mandelbrot: {
+    label: 'Mandelbrot Set',
+    info: 'Mandelbrot Set (chưa cài đặt). Tập hợp các điểm c trong mặt phẳng phức sao cho hàm f(z) = z² + c không phân kỳ khi lặp từ z=0. Sẽ được cài đặt trong phiên bản tiếp theo.',
+    params: [
+      {
+        id: 'mandel_iter',
+        name: 'Max Iterations',
+        type: 'range', min: 50, max: 1000, step: 50, default: 200
+      },
+      {
+        id: 'mandel_cx',
+        name: 'Center X',
+        type: 'number', min: -2.5, max: 1.0, step: 0.001, default: -0.5
+      },
+      {
+        id: 'mandel_cy',
+        name: 'Center Y',
+        type: 'number', min: -1.5, max: 1.5, step: 0.001, default: 0.0
+      },
+      {
+        id: 'mandel_zoom',
+        name: 'Zoom',
+        type: 'range', min: 0.5, max: 100, step: 0.5, default: 1.0
+      }
+    ]
+  },
+
+  julia: {
+    label: 'Julia Set',
+    info: 'Julia Set (chưa cài đặt). Giống Mandelbrot nhưng c là hằng số cố định, còn z là điểm đang xét. Thay đổi C_Real và C_Imag sẽ tạo ra các hình dạng Julia khác nhau. Sẽ được cài đặt trong phiên bản tiếp theo.',
+    params: [
+      {
+        id: 'julia_iter',
+        name: 'Max Iterations',
+        type: 'range', min: 50, max: 1000, step: 50, default: 200
+      },
+      {
+        id: 'julia_cr',
+        name: 'C Real (hằng số thực)',
+        type: 'number', min: -2.0, max: 2.0, step: 0.01, default: -0.7
+      },
+      {
+        id: 'julia_ci',
+        name: 'C Imaginary (hằng số ảo)',
+        type: 'number', min: -2.0, max: 2.0, step: 0.01, default: 0.27
+      },
+      {
+        id: 'julia_zoom',
+        name: 'Zoom',
+        type: 'range', min: 0.5, max: 10, step: 0.1, default: 1.0
+      }
+    ]
+  }
+};
