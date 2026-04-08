@@ -17,9 +17,15 @@
   let hasRendered = false;
   let lastFractalKey = null;
 
+  function stopAllRenderers() {
+    KochRenderer.stop();
+    if (typeof MandelbrotRenderer !== 'undefined') MandelbrotRenderer.stop();
+    if (typeof JuliaRenderer !== 'undefined') JuliaRenderer.stop();
+  }
+
   // ── Render dispatcher ──────────────────────────────────────────────────
   function handleRender(fractalKey, params, instant = false) {
-    KochRenderer.stop();
+    stopAllRenderers();
 
     if (fractalKey === 'koch') {
       UI.hideOverlay();
@@ -57,6 +63,46 @@
 
       hasRendered = true;
       lastFractalKey = 'koch';
+
+    } else if (fractalKey === 'mandelbrot' || fractalKey === 'julia') {
+      const renderer = fractalKey === 'mandelbrot' ? MandelbrotRenderer : JuliaRenderer;
+      const title = fractalKey === 'mandelbrot' ? 'MANDELBROT SET' : 'JULIA SET';
+      const typeTag = fractalKey === 'mandelbrot' ? 'MANDEL' : 'JULIA';
+      const iterValue = Math.round(params[fractalKey === 'mandelbrot' ? 'mandel_iter' : 'julia_iter']);
+
+      UI.hideOverlay();
+      UI.setCanvasLabel('RENDERING…');
+      document.body.classList.add('rendering');
+
+      if (instant && hasRendered && lastFractalKey === fractalKey) {
+        const t0 = performance.now();
+        const iter = renderer.render(canvas, params);
+        const elapsed = (performance.now() - t0).toFixed(0);
+        document.body.classList.remove('rendering');
+        UI.setCanvasLabel(title, true);
+        UI.setStats(
+          elapsed < 2 ? '>500' : Math.round(1000 / elapsed),
+          typeTag,
+          iter
+        );
+      } else {
+        const t0 = performance.now();
+        renderer.renderAnimated(canvas, params, (iter) => {
+          const elapsed = (performance.now() - t0).toFixed(0);
+          document.body.classList.remove('rendering');
+          UI.setCanvasLabel(title, true);
+          UI.setStats(
+            elapsed < 2 ? '>500' : Math.round(1000 / elapsed),
+            typeTag,
+            iter
+          );
+          hasRendered = true;
+          lastFractalKey = fractalKey;
+        });
+      }
+
+      hasRendered = true;
+      lastFractalKey = fractalKey;
 
     } else {
       // Các fractal chưa cài đặt
@@ -108,7 +154,7 @@
   }
 
   function handleReset() {
-    KochRenderer.stop();
+    stopAllRenderers();
     hasRendered = false;
     lastFractalKey = null;
     UI.showOverlay();
@@ -143,6 +189,8 @@
 
   // ── Init WebGL ──────────────────────────────────────────────────────────
   KochRenderer.init(canvas);
+  MandelbrotRenderer.init(canvas);
+  JuliaRenderer.init(canvas);
 
   console.log(
     '%c[FRACTAL ENGINE]%c WebGL ready. Kéo slider để tự động render.',
