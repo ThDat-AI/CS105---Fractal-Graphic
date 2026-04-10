@@ -20,6 +20,8 @@
   // ── Render dispatcher ──────────────────────────────────────────────────
   function handleRender(fractalKey, params, instant = false) {
     KochRenderer.stop();
+    SierpinskiTriangleRenderer.stop();
+    SierpinskiCarpetRenderer.stop();
 
     if (fractalKey === 'koch') {
       UI.hideOverlay();
@@ -57,6 +59,54 @@
 
       hasRendered = true;
       lastFractalKey = 'koch';
+
+    } else if (fractalKey === 'sierpinski_triangle') {
+      UI.hideOverlay();
+      UI.setCanvasLabel('RENDERING…');
+      document.body.classList.add('rendering');
+
+      if (instant && hasRendered && lastFractalKey === fractalKey) {
+        const t0 = performance.now();
+        const verts = SierpinskiTriangleRenderer.render(canvas, params);
+        const elapsed = (performance.now() - t0).toFixed(0);
+        document.body.classList.remove('rendering');
+        UI.setCanvasLabel('SIERPIŃSKI TRIANGLE — LEVEL ' + Math.round(params.sier_t_levels), true);
+        UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), 'SIERPINSKI', verts);
+      } else {
+        const t0 = performance.now();
+        SierpinskiTriangleRenderer.renderAnimated(canvas, params, (verts) => {
+          const elapsed = (performance.now() - t0).toFixed(0);
+          document.body.classList.remove('rendering');
+          UI.setCanvasLabel('SIERPIŃSKI TRIANGLE — LEVEL ' + Math.round(params.sier_t_levels), true);
+          UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), 'SIERPINSKI', verts);
+        });
+      }
+      hasRendered = true;
+      lastFractalKey = fractalKey;
+
+    } else if (fractalKey === 'sierpinski_carpet') {
+      UI.hideOverlay();
+      UI.setCanvasLabel('RENDERING…');
+      document.body.classList.add('rendering');
+
+      if (instant && hasRendered && lastFractalKey === fractalKey) {
+        const t0 = performance.now();
+        const verts = SierpinskiCarpetRenderer.render(canvas, params);
+        const elapsed = (performance.now() - t0).toFixed(0);
+        document.body.classList.remove('rendering');
+        UI.setCanvasLabel('SIERPIŃSKI CARPET — LEVEL ' + Math.round(params.sier_c_levels), true);
+        UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), 'SIERPINSKI', verts);
+      } else {
+        const t0 = performance.now();
+        SierpinskiCarpetRenderer.renderAnimated(canvas, params, (verts) => {
+          const elapsed = (performance.now() - t0).toFixed(0);
+          document.body.classList.remove('rendering');
+          UI.setCanvasLabel('SIERPIŃSKI CARPET — LEVEL ' + Math.round(params.sier_c_levels), true);
+          UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), 'SIERPINSKI', verts);
+        });
+      }
+      hasRendered = true;
+      lastFractalKey = fractalKey;
 
     } else {
       // Các fractal chưa cài đặt
@@ -109,6 +159,8 @@
 
   function handleReset() {
     KochRenderer.stop();
+    SierpinskiTriangleRenderer.stop();
+    SierpinskiCarpetRenderer.stop();
     hasRendered = false;
     lastFractalKey = null;
     UI.showOverlay();
@@ -143,6 +195,8 @@
 
   // ── Init WebGL ──────────────────────────────────────────────────────────
   KochRenderer.init(canvas);
+  SierpinskiTriangleRenderer.init(canvas);
+  SierpinskiCarpetRenderer.init(canvas);
 
   console.log(
     '%c[FRACTAL ENGINE]%c WebGL ready. Kéo slider để tự động render.',
