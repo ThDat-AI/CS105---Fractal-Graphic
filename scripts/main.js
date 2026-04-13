@@ -4,7 +4,6 @@
 (function () {
   const canvas = document.getElementById('glCanvas');
 
-  // Resize canvas to match display size
   function fitCanvas() {
     const wrapper = canvas.parentElement;
     canvas.width  = wrapper.clientWidth;
@@ -13,12 +12,13 @@
   fitCanvas();
   window.addEventListener('resize', () => { fitCanvas(); });
 
-  // Track whether a render has ever been done
   let hasRendered = false;
   let lastFractalKey = null;
 
   function stopAllRenderers() {
     KochRenderer.stop();
+    if (typeof SierpinskiTriangleRenderer !== 'undefined') SierpinskiTriangleRenderer.stop();
+    if (typeof SierpinskiCarpetRenderer !== 'undefined') SierpinskiCarpetRenderer.stop();
     if (typeof MandelbrotRenderer !== 'undefined') MandelbrotRenderer.stop();
     if (typeof JuliaRenderer !== 'undefined') JuliaRenderer.stop();
   }
@@ -27,35 +27,29 @@
   function handleRender(fractalKey, params, instant = false) {
     stopAllRenderers();
 
+    // ================= KOCH =================
     if (fractalKey === 'koch') {
       UI.hideOverlay();
       UI.setCanvasLabel('RENDERING…');
       document.body.classList.add('rendering');
 
       if (instant && hasRendered && lastFractalKey === 'koch') {
-        // Instant render (khi kéo slider): không dùng animation
         const t0 = performance.now();
         const verts = KochRenderer.render(canvas, params);
         const elapsed = (performance.now() - t0).toFixed(0);
+
         document.body.classList.remove('rendering');
         UI.setCanvasLabel('KOCH SNOWFLAKE — LEVEL ' + Math.round(params.koch_levels), true);
-        UI.setStats(
-          elapsed < 2 ? '>500' : Math.round(1000 / elapsed),
-          'KOCH',
-          verts
-        );
+        UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), 'KOCH', verts);
       } else {
-        // Animated render (lần đầu / nhấn RENDER)
         const t0 = performance.now();
         KochRenderer.renderAnimated(canvas, params, (verts) => {
           const elapsed = (performance.now() - t0).toFixed(0);
+
           document.body.classList.remove('rendering');
           UI.setCanvasLabel('KOCH SNOWFLAKE — LEVEL ' + Math.round(params.koch_levels), true);
-          UI.setStats(
-            elapsed < 2 ? '>500' : Math.round(1000 / elapsed),
-            'KOCH',
-            verts
-          );
+          UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), 'KOCH', verts);
+
           hasRendered = true;
           lastFractalKey = 'koch';
         });
@@ -63,12 +57,71 @@
 
       hasRendered = true;
       lastFractalKey = 'koch';
+    }
 
-    } else if (fractalKey === 'mandelbrot' || fractalKey === 'julia') {
+    // ================= SIERPINSKI TRIANGLE =================
+    else if (fractalKey === 'sierpinski_triangle') {
+      UI.hideOverlay();
+      UI.setCanvasLabel('RENDERING…');
+      document.body.classList.add('rendering');
+
+      if (instant && hasRendered && lastFractalKey === fractalKey) {
+        const t0 = performance.now();
+        const verts = SierpinskiTriangleRenderer.render(canvas, params);
+        const elapsed = (performance.now() - t0).toFixed(0);
+
+        document.body.classList.remove('rendering');
+        UI.setCanvasLabel('SIERPIŃSKI TRIANGLE — LEVEL ' + Math.round(params.sier_t_levels), true);
+        UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), 'SIERPINSKI', verts);
+      } else {
+        const t0 = performance.now();
+        SierpinskiTriangleRenderer.renderAnimated(canvas, params, (verts) => {
+          const elapsed = (performance.now() - t0).toFixed(0);
+
+          document.body.classList.remove('rendering');
+          UI.setCanvasLabel('SIERPIŃSKI TRIANGLE — LEVEL ' + Math.round(params.sier_t_levels), true);
+          UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), 'SIERPINSKI', verts);
+        });
+      }
+
+      hasRendered = true;
+      lastFractalKey = fractalKey;
+    }
+
+    // ================= SIERPINSKI CARPET =================
+    else if (fractalKey === 'sierpinski_carpet') {
+      UI.hideOverlay();
+      UI.setCanvasLabel('RENDERING…');
+      document.body.classList.add('rendering');
+
+      if (instant && hasRendered && lastFractalKey === fractalKey) {
+        const t0 = performance.now();
+        const verts = SierpinskiCarpetRenderer.render(canvas, params);
+        const elapsed = (performance.now() - t0).toFixed(0);
+
+        document.body.classList.remove('rendering');
+        UI.setCanvasLabel('SIERPIŃSKI CARPET — LEVEL ' + Math.round(params.sier_c_levels), true);
+        UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), 'SIERPINSKI', verts);
+      } else {
+        const t0 = performance.now();
+        SierpinskiCarpetRenderer.renderAnimated(canvas, params, (verts) => {
+          const elapsed = (performance.now() - t0).toFixed(0);
+
+          document.body.classList.remove('rendering');
+          UI.setCanvasLabel('SIERPIŃSKI CARPET — LEVEL ' + Math.round(params.sier_c_levels), true);
+          UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), 'SIERPINSKI', verts);
+        });
+      }
+
+      hasRendered = true;
+      lastFractalKey = fractalKey;
+    }
+
+    // ================= MANDELBROT + JULIA =================
+    else if (fractalKey === 'mandelbrot' || fractalKey === 'julia') {
       const renderer = fractalKey === 'mandelbrot' ? MandelbrotRenderer : JuliaRenderer;
       const title = fractalKey === 'mandelbrot' ? 'MANDELBROT SET' : 'JULIA SET';
       const typeTag = fractalKey === 'mandelbrot' ? 'MANDEL' : 'JULIA';
-      const iterValue = Math.round(params[fractalKey === 'mandelbrot' ? 'mandel_iter' : 'julia_iter']);
 
       UI.hideOverlay();
       UI.setCanvasLabel('RENDERING…');
@@ -78,24 +131,19 @@
         const t0 = performance.now();
         const iter = renderer.render(canvas, params);
         const elapsed = (performance.now() - t0).toFixed(0);
+
         document.body.classList.remove('rendering');
         UI.setCanvasLabel(title, true);
-        UI.setStats(
-          elapsed < 2 ? '>500' : Math.round(1000 / elapsed),
-          typeTag,
-          iter
-        );
+        UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), typeTag, iter);
       } else {
         const t0 = performance.now();
         renderer.renderAnimated(canvas, params, (iter) => {
           const elapsed = (performance.now() - t0).toFixed(0);
+
           document.body.classList.remove('rendering');
           UI.setCanvasLabel(title, true);
-          UI.setStats(
-            elapsed < 2 ? '>500' : Math.round(1000 / elapsed),
-            typeTag,
-            iter
-          );
+          UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), typeTag, iter);
+
           hasRendered = true;
           lastFractalKey = fractalKey;
         });
@@ -103,9 +151,10 @@
 
       hasRendered = true;
       lastFractalKey = fractalKey;
+    }
 
-    } else {
-      // Các fractal chưa cài đặt
+    // ================= FALLBACK =================
+    else {
       document.body.classList.remove('rendering');
       hasRendered = false;
       lastFractalKey = fractalKey;
@@ -114,42 +163,7 @@
       UI.setCanvasLabel('NOT IMPLEMENTED YET');
       UI.setStats('—', fractalKey.toUpperCase(), '—');
 
-      // 2D fallback notice
-      const ctx2d = canvas.getContext('2d');
-      if (ctx2d) {
-        canvas.width = canvas.clientWidth;
-        canvas.height = canvas.clientHeight;
-        ctx2d.clearRect(0, 0, canvas.width, canvas.height);
-        ctx2d.fillStyle = '#f0f4f8';
-        ctx2d.fillRect(0, 0, canvas.width, canvas.height);
-
-        ctx2d.strokeStyle = '#b8cfe0';
-        ctx2d.lineWidth = 1;
-        ctx2d.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
-
-        ctx2d.textAlign = 'center';
-        ctx2d.font = 'bold 17px "Share Tech Mono", monospace';
-        ctx2d.fillStyle = '#e05c1a';
-        ctx2d.fillText('[ COMING SOON ]', canvas.width / 2, canvas.height / 2 - 22);
-
-        ctx2d.font = '14px "Rajdhani", sans-serif';
-        ctx2d.fillStyle = '#6a8fa8';
-        ctx2d.fillText(name, canvas.width / 2, canvas.height / 2 + 10);
-
-        ctx2d.font = '11px "Share Tech Mono", monospace';
-        ctx2d.fillStyle = '#b8cfe0';
-        ctx2d.fillText('Sẽ được cài đặt trong phiên bản tiếp theo', canvas.width / 2, canvas.height / 2 + 36);
-      }
-
       UI.showOverlay();
-      document.getElementById('canvasOverlay').innerHTML = `
-        <div class="overlay-text">
-          <div class="overlay-icon" style="font-size:40px;color:var(--accent2)">⚙</div>
-          <div style="color:var(--accent2);font-weight:700;font-size:17px">COMING SOON</div>
-          <div style="font-size:13px;margin-top:4px">${name}</div>
-          <div style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);margin-top:6px">Chưa được cài đặt trong phiên bản này</div>
-        </div>
-      `;
     }
   }
 
@@ -157,17 +171,13 @@
     stopAllRenderers();
     hasRendered = false;
     lastFractalKey = null;
+
     UI.showOverlay();
-    document.getElementById('canvasOverlay').innerHTML = `
-      <div class="overlay-text">
-        <div class="overlay-icon">◈</div>
-        <div>Chọn fractal và nhấn <strong>RENDER</strong></div>
-      </div>
-    `;
     UI.setCanvasLabel('NO SIGNAL');
     UI.setStats(null, null, null);
 
     fitCanvas();
+
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
     if (gl) {
       gl.clearColor(0.94, 0.96, 0.99, 1);
@@ -175,25 +185,26 @@
     }
   }
 
-  // ── Init UI ────────────────────────────────────────────────────────────
+  // ── Init UI ────────────────────────────────────────────
   UI.init(
-    (key, params) => handleRender(key, params, true),  // auto-render từ slider
+    (key, params) => handleRender(key, params, true),
     handleReset
   );
 
-  // Nút RENDER: animated render
   document.getElementById('renderBtn').addEventListener('click', () => {
     const key = document.getElementById('fractalSelect').value;
     handleRender(key, UI.getParams(key), false);
   });
 
-  // ── Init WebGL ──────────────────────────────────────────────────────────
+  // ── Init WebGL ──────────────────────────────────────────
   KochRenderer.init(canvas);
+  SierpinskiTriangleRenderer.init(canvas);
+  SierpinskiCarpetRenderer.init(canvas);
   MandelbrotRenderer.init(canvas);
   JuliaRenderer.init(canvas);
 
   console.log(
-    '%c[FRACTAL ENGINE]%c WebGL ready. Kéo slider để tự động render.',
+    '%c[FRACTAL ENGINE]%c WebGL ready.',
     'color:#0077cc;font-weight:bold',
     'color:#6a8fa8'
   );

@@ -55,7 +55,7 @@ const FRACTAL_PARAMS = {
 
   sierpinski_triangle: {
     label: 'Sierpiński Triangle — Tam Giác Sierpiński',
-    info: 'Tam giác Sierpiński (chưa cài đặt). Tạo bằng cách chia đệ quy một tam giác thành 4 tam giác nhỏ và loại bỏ tam giác ở giữa. Sẽ được cài đặt trong phiên bản tiếp theo.',
+    info: 'Tam giác Sierpiński. Tạo bằng cách chia đệ quy một tam giác thành 4 tam giác nhỏ và loại bỏ tam giác ở giữa. Sẽ được cài đặt trong phiên bản tiếp theo.',
     params: [
       {
         id: 'sier_t_levels',
@@ -65,19 +65,19 @@ const FRACTAL_PARAMS = {
       {
         id: 'sier_t_color',
         name: 'Triangle Color',
-        type: 'color', default: '#cc44ff'
+        type: 'color', default: '#3c0bc2'
       },
       {
         id: 'sier_t_bg',
         name: 'Background Color',
-        type: 'color', default: '#000000'
+        type: 'color', default: '#ffffff'
       }
     ]
   },
 
   sierpinski_carpet: {
     label: 'Sierpiński Carpet — Hình Vuông Sierpiński',
-    info: 'Thảm Sierpiński (chưa cài đặt). Mỗi hình vuông được chia thành 9 ô vuông nhỏ và ô giữa bị xóa đi, lặp lại đệ quy. Sẽ được cài đặt trong phiên bản tiếp theo.',
+    info: 'Thảm Sierpiński. Mỗi hình vuông được chia thành 9 ô vuông nhỏ và ô giữa bị xóa đi, lặp lại đệ quy. Sẽ được cài đặt trong phiên bản tiếp theo.',
     params: [
       {
         id: 'sier_c_levels',
