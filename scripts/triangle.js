@@ -31,7 +31,7 @@ const SierpinskiTriangleRenderer = (() => {
     const verts = [];
 
     function divide(a, b, c, lvl) {
-      if (lvl <= 1) {
+      if (lvl === 0) {
         verts.push(a.x, a.y, b.x, b.y, c.x, c.y);
         return;
       }
@@ -60,7 +60,7 @@ const SierpinskiTriangleRenderer = (() => {
     WebGLUtils.resizeCanvas(canvas);
     gl.viewport(0, 0, canvas.width, canvas.height);
 
-    const levels = Math.round(params.sier_t_levels || 6);
+    const levels = Math.max(0, Math.round(params.sier_t_levels ?? 6));
     const bg = WebGLUtils.hexToRgb(params.sier_t_bg || '#000000');
     const color = WebGLUtils.hexToRgb(params.sier_t_color || '#cc44ff');
 
@@ -96,7 +96,7 @@ const SierpinskiTriangleRenderer = (() => {
     WebGLUtils.resizeCanvas(canvas);
     gl.viewport(0, 0, canvas.width, canvas.height);
 
-    const levels = Math.round(params.sier_t_levels || 6);
+    const levels = Math.max(0, Math.round(params.sier_t_levels ?? 6));
     const bg = WebGLUtils.hexToRgb(params.sier_t_bg || '#ffffff');
     const color = WebGLUtils.hexToRgb(params.sier_t_color || '#2408c2');
 

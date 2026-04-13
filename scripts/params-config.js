@@ -61,7 +61,7 @@ const FRACTAL_PARAMS = {
       {
         id: 'sier_t_levels',
         name: 'Levels (Cấp độ đệ quy)',
-        type: 'range', min: 1, max: 9, step: 1, default: 6
+        type: 'range', min: 0, max: 7, step: 1, default: 6
       },
       {
         id: 'sier_t_color',
@@ -83,7 +83,7 @@ const FRACTAL_PARAMS = {
       {
         id: 'sier_c_levels',
         name: 'Levels (Cấp độ đệ quy)',
-        type: 'range', min: 1, max: 6, step: 1, default: 4
+        type: 'range', min: 0, max: 7, step: 1, default: 4
       },
       {
         id: 'sier_c_color',

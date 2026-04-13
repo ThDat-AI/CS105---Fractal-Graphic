@@ -25,7 +25,7 @@ const SierpinskiCarpetRenderer = (() => {
   function buildSierpinskiCarpet(levels) {
     const verts = [];
     function divide(x, y, size, lvl) {
-      if (lvl <= 1) {
+      if (lvl === 0) {
         // 2 tam giác cho 1 hình vuông
         verts.push(
           x, y,           x + size, y,      x, y - size,
@@ -57,7 +57,7 @@ const SierpinskiCarpetRenderer = (() => {
     WebGLUtils.resizeCanvas(canvas);
     gl.viewport(0, 0, canvas.width, canvas.height);
 
-    const levels = Math.round(params.sier_c_levels || 4);
+    const levels = Math.max(0, Math.round(params.sier_c_levels ?? 4));
     const bg = WebGLUtils.hexToRgb(params.sier_c_bg || '#f8fbff'); 
     const color = WebGLUtils.hexToRgb(params.sier_c_color || '#ff3366');
 
@@ -93,7 +93,7 @@ const SierpinskiCarpetRenderer = (() => {
     WebGLUtils.resizeCanvas(canvas);
     gl.viewport(0, 0, canvas.width, canvas.height);
 
-    const levels = Math.round(params.sier_c_levels || 4);
+    const levels = Math.max(0, Math.round(params.sier_c_levels ?? 4));
     const bg = WebGLUtils.hexToRgb(params.sier_c_bg || '#f8fbff');
     const color = WebGLUtils.hexToRgb(params.sier_c_color || '#ff3366');
 
