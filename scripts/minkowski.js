@@ -1,5 +1,5 @@
 // scripts/minkowski.js
-// Vẽ đường cong Minkowski (Minkowski Curve) bằng WebGL
+// Vẽ Minkowski Island (chuẩn 8-segment Minkowski sausage) bằng WebGL
 
 const MinkowskiRenderer = (() => {
 
@@ -11,7 +11,6 @@ const MinkowskiRenderer = (() => {
     uniform vec2  u_offset;
 
     void main() {
-      // Đưa tọa độ [-1,1] vào clip space
       vec2 pos = a_position * u_scale + u_offset;
       gl_Position = vec4(pos, 0.0, 1.0);
     }
@@ -27,61 +26,66 @@ const MinkowskiRenderer = (() => {
     }
   `;
 
-  // ── Sinh điểm Minkowski đệ quy (CPU) ─────────────────────────────────────
-  /**
-   * Tạo một bước Minkowski: thay đoạn thẳng [p1, p2]
-   * bằng 8 đoạn tạo thành hình vuông lồi ra ngoài.
-   */
+  // ── Minkowski sausage (8 đoạn chuẩn) ────────────────────────────────────
   function minkowskiSegment(p1, p2, level, outLines) {
     if (level === 0) {
       outLines.push(p1.x, p1.y, p2.x, p2.y);
       return;
     }
 
-    // Chia đoạn thành 4 phần bằng nhau
     const dx = p2.x - p1.x;
     const dy = p2.y - p1.y;
 
-    const a = { x: p1.x + dx / 4, y: p1.y + dy / 4 };
-    const b = { x: p1.x + dx / 2, y: p1.y + dy / 2 };
-    const c = { x: p1.x + 3 * dx / 4, y: p1.y + 3 * dy / 4 };
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const ux = dx / len;
+    const uy = dy / len;
 
-    // Tính vector pháp tuyến (xoay 90°)
-    const nx = -dy;
-    const ny = dx;
-    const length = Math.sqrt(nx * nx + ny * ny);
-    const normalX = nx / length;
-    const normalY = ny / length;
+    // pháp tuyến
+    const nx = -uy;
+    const ny = ux;
 
-    // Điểm nhô ra (khoảng cách bằng 1/4 đoạn)
-    const dist = Math.sqrt(dx * dx + dy * dy) / 4;
-    const e = { x: b.x + normalX * dist, y: b.y + normalY * dist };
-    const f = { x: b.x + normalX * dist * 2, y: b.y + normalY * dist * 2 };
-    const g = { x: c.x + normalX * dist, y: c.y + normalY * dist };
+    const d = len / 4;
 
-    // 8 đoạn Minkowski
-    minkowskiSegment(p1, a, level - 1, outLines);
-    minkowskiSegment(a, e, level - 1, outLines);
-    minkowskiSegment(e, f, level - 1, outLines);
-    minkowskiSegment(f, g, level - 1, outLines);
-    minkowskiSegment(g, c, level - 1, outLines);
-    minkowskiSegment(c, p2, level - 1, outLines);
+    // chia 4 đoạn
+    const pA = { x: p1.x + dx / 4, y: p1.y + dy / 4 };
+    const pB = { x: p1.x + dx / 2, y: p1.y + dy / 2 };
+    const pC = { x: p1.x + 3 * dx / 4, y: p1.y + 3 * dy / 4 };
+
+    // điểm nhô lên/xuống
+    const pD = { x: pA.x + nx * d, y: pA.y + ny * d };
+    const pE = { x: pB.x + nx * d, y: pB.y + ny * d };
+    const pF = { x: pB.x - nx * d, y: pB.y - ny * d };
+    const pG = { x: pC.x - nx * d, y: pC.y - ny * d };
+
+    // 8 đoạn chuẩn
+    minkowskiSegment(p1, pA, level - 1, outLines);
+    minkowskiSegment(pA, pD, level - 1, outLines);
+    minkowskiSegment(pD, pE, level - 1, outLines);
+    minkowskiSegment(pE, pB, level - 1, outLines);
+    minkowskiSegment(pB, pF, level - 1, outLines);
+    minkowskiSegment(pF, pG, level - 1, outLines);
+    minkowskiSegment(pG, pC, level - 1, outLines);
+    minkowskiSegment(pC, p2, level - 1, outLines);
   }
 
-  /**
-   * Tạo toàn bộ đỉnh của đường cong Minkowski.
-   * Bắt đầu từ một đoạn thẳng ngang.
-   * @param {number} levels - số cấp đệ quy (1–5)
-   * @returns {Float32Array} mảng [x1,y1, x2,y2, ...] (LINE_SEGMENTS)
-   */
-  function buildMinkowskiCurve(levels) {
+  // ── Build Minkowski Island (đa giác kín) ────────────────────────────────
+  function buildMinkowskiIsland(levels) {
     const lines = [];
 
-    // Bắt đầu từ đoạn thẳng ngang
-    const p1 = { x: -0.8, y: 0.0 };
-    const p2 = { x: 0.8, y: 0.0 };
+    // Hình vuông ban đầu (khép kín)
+    const square = [
+      { x: -0.6, y: -0.6 },
+      { x:  0.6, y: -0.6 },
+      { x:  0.6, y:  0.6 },
+      { x: -0.6, y:  0.6 }
+    ];
 
-    minkowskiSegment(p1, p2, levels, lines);
+    // Áp dụng Minkowski cho từng cạnh
+    for (let i = 0; i < 4; i++) {
+      const p1 = square[i];
+      const p2 = square[(i + 1) % 4];
+      minkowskiSegment(p1, p2, levels, lines);
+    }
 
     return new Float32Array(lines);
   }
@@ -90,7 +94,7 @@ const MinkowskiRenderer = (() => {
   let gl, program, posBuffer;
   let vertexCount = 0;
 
-  // ── Khởi tạo ────────────────────────────────────────────────────────────
+  // ── Init ────────────────────────────────────────────────────────────────
   function init(canvas) {
     gl = WebGLUtils.initGL(canvas);
     if (!gl) return false;
@@ -101,7 +105,7 @@ const MinkowskiRenderer = (() => {
     return true;
   }
 
-  // ── Render với params ────────────────────────────────────────────────────
+  // ── Render ──────────────────────────────────────────────────────────────
   function render(canvas, params) {
     if (!gl || !program) {
       if (!init(canvas)) return 0;
@@ -110,52 +114,43 @@ const MinkowskiRenderer = (() => {
     WebGLUtils.resizeCanvas(canvas);
     gl.viewport(0, 0, canvas.width, canvas.height);
 
-    // Clear background
     const bg = WebGLUtils.hexToRgb(params.mink_bg || '#000000');
     gl.clearColor(bg[0], bg[1], bg[2], 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
-    const levels = Math.round(params.mink_levels || 3);
-    const scale = 1.0; // Có thể thêm param scale sau
+    const levels = Math.round(params.mink_levels ?? 3);
 
-    // Build geometry
-    const vertices = buildMinkowskiCurve(levels);
+    const vertices = buildMinkowskiIsland(levels);
     vertexCount = vertices.length / 2;
 
-    // Upload buffer
     if (!posBuffer) posBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 
-    // Use program
     gl.useProgram(program);
 
-    // Attribute: a_position
     const aPos = gl.getAttribLocation(program, 'a_position');
     gl.enableVertexAttribArray(aPos);
-    gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
     gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
-    // Uniforms
     const uScale = gl.getUniformLocation(program, 'u_scale');
     const uOffset = gl.getUniformLocation(program, 'u_offset');
     const uColor = gl.getUniformLocation(program, 'u_color');
     const uRes = gl.getUniformLocation(program, 'u_resolution');
 
-    const color = WebGLUtils.hexToRgb(params.mink_color || '#ff6b35');
+    const color = WebGLUtils.hexToRgb(params.mink_color || '#00e5ff');
 
     gl.uniform2f(uRes, canvas.width, canvas.height);
-    gl.uniform1f(uScale, scale);
+    gl.uniform1f(uScale, 1.0);
     gl.uniform2f(uOffset, 0.0, 0.0);
     gl.uniform3fv(uColor, color);
 
-    // Draw as line segments
     gl.drawArrays(gl.LINES, 0, vertexCount);
 
     return vertexCount;
   }
 
-  // ── Animated render (hiệu ứng vẽ dần) ───────────────────────────────────
+  // ── Animation ───────────────────────────────────────────────────────────
   let animFrame = null;
 
   function renderAnimated(canvas, params, onDone) {
@@ -168,11 +163,9 @@ const MinkowskiRenderer = (() => {
     WebGLUtils.resizeCanvas(canvas);
     gl.viewport(0, 0, canvas.width, canvas.height);
 
-    const levels = Math.round(params.mink_levels || 3);
-    const color = WebGLUtils.hexToRgb(params.mink_color || '#ff6b35');
-    const bg = WebGLUtils.hexToRgb(params.mink_bg || '#000000');
+    const levels = Math.round(params.mink_levels ?? 3);
+    const vertices = buildMinkowskiIsland(levels);
 
-    const vertices = buildMinkowskiCurve(levels);
     const totalVerts = vertices.length / 2;
 
     if (!posBuffer) posBuffer = gl.createBuffer();
@@ -185,14 +178,14 @@ const MinkowskiRenderer = (() => {
     const uColor = gl.getUniformLocation(program, 'u_color');
     const uRes = gl.getUniformLocation(program, 'u_resolution');
 
-    // Animate: vẽ từng đoạn thẳng dần dần
+    const color = WebGLUtils.hexToRgb(params.mink_color || '#00e5ff');
+    const bg = WebGLUtils.hexToRgb(params.mink_bg || '#000000');
+
     const LINES_PER_FRAME = Math.max(4, Math.floor(totalVerts / 60));
     let drawn = 0;
-    let startTime = performance.now();
 
-    function drawFrame(ts) {
+    function drawFrame() {
       drawn = Math.min(drawn + LINES_PER_FRAME * 2, totalVerts);
-      // Số lượng đỉnh cần là bội của 2
       const drawCount = Math.floor(drawn / 2) * 2;
 
       gl.clearColor(bg[0], bg[1], bg[2], 1.0);
@@ -200,7 +193,6 @@ const MinkowskiRenderer = (() => {
 
       gl.useProgram(program);
       gl.enableVertexAttribArray(aPos);
-      gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
       gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
       gl.uniform2f(uRes, canvas.width, canvas.height);
@@ -222,8 +214,17 @@ const MinkowskiRenderer = (() => {
   }
 
   function stop() {
-    if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+    if (animFrame) {
+      cancelAnimationFrame(animFrame);
+      animFrame = null;
+    }
   }
 
-  return { init, render, renderAnimated, stop, buildMinkowskiCurve };
+  return {
+    init,
+    render,
+    renderAnimated,
+    stop,
+    buildMinkowskiIsland
+  };
 })();

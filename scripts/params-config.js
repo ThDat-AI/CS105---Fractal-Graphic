@@ -9,8 +9,8 @@ const FRACTAL_PARAMS = {
       {
         id: 'koch_levels',
         name: 'Levels (Cấp độ đệ quy)',
-        type: 'range', min: 0, max: 10, step: 1, default: 4,
-        hint: 'Số lần lặp. Level 10 có thể chậm hơn.'
+        type: 'range', min: 0, max: 7, step: 1, default: 4,
+        hint: 'Số lần lặp. Level 7 có thể chậm hơn.'
       },
       {
         id: 'koch_color_inner',
@@ -32,14 +32,14 @@ const FRACTAL_PARAMS = {
   },
 
   minkowski: {
-    label: 'Minkowski Curve — Đường Cong Minkowski',
-    info: 'Đường cong Minkowski là một fractal được tạo bằng cách thay thế mỗi đoạn thẳng bằng 8 đoạn nhỏ hơn, tạo thành các hình vuông lồi ra ngoài.',
+    label: 'Minkowski Island — Đảo Minkowski',
+    info: 'Đảo Minkowski là một fractal được tạo bằng cách áp dụng đường cong Minkowski (thay thế mỗi đoạn thẳng bằng 8 đoạn nhỏ hơn, tạo thành các hình vuông lồi ra ngoài) lên các cạnh của một hình vuông.',
     params: [
       {
         id: 'mink_levels',
         name: 'Levels (Cấp độ đệ quy)',
-        type: 'range', min: 1, max: 5, step: 1, default: 3,
-        hint: 'Số lần lặp. Level 5 có thể chậm hơn.'
+        type: 'range', min: 0, max: 7, step: 1, default: 3,
+        hint: 'Số lần lặp. Level 7 có thể chậm hơn.'
       },
       {
         id: 'mink_color',
