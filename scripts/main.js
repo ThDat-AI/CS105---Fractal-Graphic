@@ -6,11 +6,25 @@
 
   function fitCanvas() {
     const wrapper = canvas.parentElement;
-    canvas.width  = wrapper.clientWidth;
-    canvas.height = wrapper.clientHeight;
+    const size = Math.min(wrapper.clientWidth, wrapper.clientHeight);
+    canvas.width = size;
+    canvas.height = size;
   }
+
+  function debounce(fn, delay) {
+    let timer;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn(...args), delay);
+    };
+  }
+
   fitCanvas();
-  window.addEventListener('resize', () => { fitCanvas(); });
+  window.addEventListener('resize', debounce(() => {
+    fitCanvas();
+    const key = document.getElementById('fractalSelect').value;
+    handleRender(key, UI.getParams(key), true);
+  }, 120));
 
   let hasRendered = false;
   let lastFractalKey = null;
@@ -232,6 +246,10 @@
   SierpinskiCarpetRenderer.init(canvas);
   MandelbrotRenderer.init(canvas);
   JuliaRenderer.init(canvas);
+
+  // Auto-render initial fractal on page load
+  const initialKey = document.getElementById('fractalSelect').value;
+  handleRender(initialKey, UI.getParams(initialKey), true);
 
   console.log(
     '%c[FRACTAL ENGINE]%c WebGL ready.',
