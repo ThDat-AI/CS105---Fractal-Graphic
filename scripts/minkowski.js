@@ -119,6 +119,9 @@ const MinkowskiRenderer = (() => {
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     const levels = Math.round(params.mink_levels ?? 3);
+    const zoom = params.zoom ?? 1.0;
+    const offsetX = params.offsetX ?? 0;
+    const offsetY = params.offsetY ?? 0;
 
     const vertices = buildMinkowskiIsland(levels);
     vertexCount = vertices.length / 2;
@@ -141,8 +144,8 @@ const MinkowskiRenderer = (() => {
     const color = WebGLUtils.hexToRgb(params.mink_color || '#00e5ff');
 
     gl.uniform2f(uRes, canvas.width, canvas.height);
-    gl.uniform1f(uScale, 1.0);
-    gl.uniform2f(uOffset, 0.0, 0.0);
+    gl.uniform1f(uScale, 1.0 / zoom);
+    gl.uniform2f(uOffset, offsetX, offsetY);
     gl.uniform3fv(uColor, color);
 
     gl.drawArrays(gl.LINES, 0, vertexCount);
@@ -164,6 +167,9 @@ const MinkowskiRenderer = (() => {
     gl.viewport(0, 0, canvas.width, canvas.height);
 
     const levels = Math.round(params.mink_levels ?? 3);
+    const zoom = params.zoom ?? 1.0;
+    const offsetX = params.offsetX ?? 0;
+    const offsetY = params.offsetY ?? 0;
     const vertices = buildMinkowskiIsland(levels);
 
     const totalVerts = vertices.length / 2;
@@ -196,8 +202,8 @@ const MinkowskiRenderer = (() => {
       gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
       gl.uniform2f(uRes, canvas.width, canvas.height);
-      gl.uniform1f(uScale, 1.0);
-      gl.uniform2f(uOffset, 0.0, 0.0);
+      gl.uniform1f(uScale, 1.0 / zoom);
+      gl.uniform2f(uOffset, offsetX, offsetY);
       gl.uniform3fv(uColor, color);
 
       gl.drawArrays(gl.LINES, 0, drawCount);

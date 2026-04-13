@@ -60,6 +60,9 @@ const SierpinskiCarpetRenderer = (() => {
     const levels = Math.max(0, Math.round(params.sier_c_levels ?? 4));
     const bg = WebGLUtils.hexToRgb(params.sier_c_bg || '#f8fbff'); 
     const color = WebGLUtils.hexToRgb(params.sier_c_color || '#ff3366');
+    const zoom = params.zoom ?? 1.0;
+    const offsetX = params.offsetX ?? 0;
+    const offsetY = params.offsetY ?? 0;
 
     const vertices = buildSierpinskiCarpet(levels);
     vertexCount = vertices.length / 2;
@@ -78,8 +81,8 @@ const SierpinskiCarpetRenderer = (() => {
     gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
     gl.uniform2f(gl.getUniformLocation(program, 'u_resolution'), canvas.width, canvas.height);
-    gl.uniform1f(gl.getUniformLocation(program, 'u_scale'), 0.85);
-    gl.uniform2f(gl.getUniformLocation(program, 'u_offset'), 0.0, 0.0);
+    gl.uniform1f(gl.getUniformLocation(program, 'u_scale'), 0.85 / zoom);
+    gl.uniform2f(gl.getUniformLocation(program, 'u_offset'), offsetX, offsetY);
     gl.uniform3fv(gl.getUniformLocation(program, 'u_color'), color);
 
     gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
@@ -96,6 +99,9 @@ const SierpinskiCarpetRenderer = (() => {
     const levels = Math.max(0, Math.round(params.sier_c_levels ?? 4));
     const bg = WebGLUtils.hexToRgb(params.sier_c_bg || '#f8fbff');
     const color = WebGLUtils.hexToRgb(params.sier_c_color || '#ff3366');
+    const zoom = params.zoom ?? 1.0;
+    const offsetX = params.offsetX ?? 0;
+    const offsetY = params.offsetY ?? 0;
 
     const vertices = buildSierpinskiCarpet(levels);
     const totalVerts = vertices.length / 2;
@@ -122,8 +128,8 @@ const SierpinskiCarpetRenderer = (() => {
       gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
       gl.uniform2f(gl.getUniformLocation(program, 'u_resolution'), canvas.width, canvas.height);
-      gl.uniform1f(gl.getUniformLocation(program, 'u_scale'), 0.85);
-      gl.uniform2f(gl.getUniformLocation(program, 'u_offset'), 0.0, 0.0);
+      gl.uniform1f(gl.getUniformLocation(program, 'u_scale'), 0.85 / zoom);
+      gl.uniform2f(gl.getUniformLocation(program, 'u_offset'), offsetX, offsetY);
       gl.uniform3fv(gl.getUniformLocation(program, 'u_color'), color);
 
       gl.drawArrays(gl.TRIANGLES, 0, drawn);

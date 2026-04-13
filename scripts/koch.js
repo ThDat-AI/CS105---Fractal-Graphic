@@ -104,7 +104,10 @@ const KochRenderer = (() => {
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     const levels = Math.round(params.koch_levels ?? 4);
-    const scale  = params.koch_scale || 0.9;
+    const baseScale = params.koch_scale || 0.9;
+    const zoom = params.zoom ?? 1.0;
+    const offsetX = params.offsetX ?? 0;
+    const offsetY = params.offsetY ?? 0;
 
     const vertices = buildKochSnowflake(levels);
     vertexCount = vertices.length / 2;
@@ -125,8 +128,8 @@ const KochRenderer = (() => {
 
     const colorA = WebGLUtils.hexToRgb(params.koch_color_inner || '#00d4ff');
 
-    gl.uniform1f(uScale, scale);
-    gl.uniform2f(uOffset, 0.0, 0.0);
+    gl.uniform1f(uScale, baseScale / zoom);
+    gl.uniform2f(uOffset, offsetX, offsetY);
     gl.uniform3fv(uColorA, colorA);
 
     gl.drawArrays(gl.LINES, 0, vertexCount);
@@ -148,7 +151,10 @@ const KochRenderer = (() => {
     gl.viewport(0, 0, canvas.width, canvas.height);
 
     const levels = Math.round(params.koch_levels ?? 4);
-    const scale  = params.koch_scale || 0.9;
+    const baseScale = params.koch_scale || 0.9;
+    const zoom = params.zoom ?? 1.0;
+    const offsetX = params.offsetX ?? 0;
+    const offsetY = params.offsetY ?? 0;
     const bg     = WebGLUtils.hexToRgb(params.koch_bg || '#000000');
     const colorA = WebGLUtils.hexToRgb(params.koch_color_inner || '#00d4ff');
 
@@ -179,8 +185,8 @@ const KochRenderer = (() => {
       gl.enableVertexAttribArray(aPos);
       gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
-      gl.uniform1f(uScale, scale);
-      gl.uniform2f(uOffset, 0.0, 0.0);
+      gl.uniform1f(uScale, baseScale / zoom);
+      gl.uniform2f(uOffset, offsetX, offsetY);
       gl.uniform3fv(uColorA, colorA);
 
       gl.drawArrays(gl.LINES, 0, drawCount);

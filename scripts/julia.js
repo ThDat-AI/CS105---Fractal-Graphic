@@ -13,6 +13,7 @@ const JuliaRenderer = (() => {
     precision mediump float;
     uniform vec2 u_resolution;
     uniform vec2 u_c;
+    uniform vec2 u_center;
     uniform float u_scale;
     uniform int u_maxIter;
     uniform vec3 u_colorA;
@@ -21,7 +22,7 @@ const JuliaRenderer = (() => {
     void main() {
       vec2 uv = (gl_FragCoord.xy / u_resolution) * 2.0 - 1.0;
       uv.x *= u_resolution.x / u_resolution.y;
-      vec2 z = uv * u_scale;
+      vec2 z = uv * u_scale + u_center;
       float iter = 0.0;
       float zx = z.x;
       float zy = z.y;
@@ -84,6 +85,8 @@ const JuliaRenderer = (() => {
     const scale = 1.8 / (params.julia_zoom || 1.0);
     const cx = params.julia_cr || -0.7;
     const cy = params.julia_ci || 0.27;
+    const centerX = params.julia_centerX || 0.0;
+    const centerY = params.julia_centerY || 0.0;
     const bg = WebGLUtils.hexToRgb(params.julia_bg || '#05060f');
     const colorA = WebGLUtils.hexToRgb(params.julia_color || '#de5cff');
     const colorB = WebGLUtils.hexToRgb(params.julia_color2 || '#24d4ff');
@@ -100,6 +103,7 @@ const JuliaRenderer = (() => {
 
     const uResolution = gl.getUniformLocation(program, 'u_resolution');
     const uC = gl.getUniformLocation(program, 'u_c');
+    const uCenter = gl.getUniformLocation(program, 'u_center');
     const uScale = gl.getUniformLocation(program, 'u_scale');
     const uMaxIter = gl.getUniformLocation(program, 'u_maxIter');
     const uColorA = gl.getUniformLocation(program, 'u_colorA');
@@ -107,6 +111,7 @@ const JuliaRenderer = (() => {
 
     gl.uniform2f(uResolution, canvas.width, canvas.height);
     gl.uniform2f(uC, cx, cy);
+    gl.uniform2f(uCenter, centerX, centerY);
     gl.uniform1f(uScale, scale);
     gl.uniform1i(uMaxIter, maxIter);
     gl.uniform3fv(uColorA, colorA);

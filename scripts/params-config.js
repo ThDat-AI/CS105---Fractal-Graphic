@@ -21,12 +21,6 @@ const FRACTAL_PARAMS = {
         id: 'koch_bg',
         name: 'Background Color',
         type: 'color', default: '#f8fbff'
-      },
-      {
-        id: 'koch_scale',
-        name: 'Scale (Thu phóng)',
-        type: 'range', min: 0.3, max: 1.0, step: 0.05, default: 0.8,
-        hint: 'Kích thước bông tuyết trong canvas.'
       }
     ]
   },
@@ -119,11 +113,6 @@ const FRACTAL_PARAMS = {
         type: 'range', min: -1.5, max: 1.5, step: 0.01, default: 0.0
       },
       {
-        id: 'mandel_zoom',
-        name: 'Zoom',
-        type: 'range', min: 0.5, max: 100, step: 0.5, default: 1.0
-      },
-      {
         id: 'mandel_bg',
         name: 'Background Color',
         type: 'color', default: '#060713'
@@ -159,11 +148,6 @@ const FRACTAL_PARAMS = {
         id: 'julia_ci',
         name: 'C Imaginary (hằng số ảo)',
         type: 'range', min: -2.0, max: 2.0, step: 0.01, default: 0.27
-      },
-      {
-        id: 'julia_zoom',
-        name: 'Zoom',
-        type: 'range', min: 0.5, max: 10, step: 0.1, default: 1.0
       },
       {
         id: 'julia_bg',

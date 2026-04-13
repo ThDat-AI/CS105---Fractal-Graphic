@@ -80,9 +80,13 @@ const SierpinskiTriangleRenderer = (() => {
     gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
     gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
+    const zoom = params.zoom ?? 1.0;
+    const offsetX = params.offsetX ?? 0;
+    const offsetY = params.offsetY ?? -0.15;
+
     gl.uniform2f(gl.getUniformLocation(program, 'u_resolution'), canvas.width, canvas.height);
-    gl.uniform1f(gl.getUniformLocation(program, 'u_scale'), 0.9);
-    gl.uniform2f(gl.getUniformLocation(program, 'u_offset'), 0.0, -0.15);
+    gl.uniform1f(gl.getUniformLocation(program, 'u_scale'), 0.9 / zoom);
+    gl.uniform2f(gl.getUniformLocation(program, 'u_offset'), offsetX, offsetY);
     gl.uniform3fv(gl.getUniformLocation(program, 'u_color'), color);
 
     gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
@@ -99,6 +103,9 @@ const SierpinskiTriangleRenderer = (() => {
     const levels = Math.max(0, Math.round(params.sier_t_levels ?? 6));
     const bg = WebGLUtils.hexToRgb(params.sier_t_bg || '#ffffff');
     const color = WebGLUtils.hexToRgb(params.sier_t_color || '#2408c2');
+    const zoom = params.zoom ?? 1.0;
+    const offsetX = params.offsetX ?? 0;
+    const offsetY = params.offsetY ?? -0.15;
 
     const vertices = buildSierpinskiTriangle(levels);
     const totalVerts = vertices.length / 2;
@@ -125,8 +132,8 @@ const SierpinskiTriangleRenderer = (() => {
       gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
       gl.uniform2f(gl.getUniformLocation(program, 'u_resolution'), canvas.width, canvas.height);
-      gl.uniform1f(gl.getUniformLocation(program, 'u_scale'), 0.9);
-      gl.uniform2f(gl.getUniformLocation(program, 'u_offset'), 0.0, -0.15);
+      gl.uniform1f(gl.getUniformLocation(program, 'u_scale'), 0.9 / zoom);
+      gl.uniform2f(gl.getUniformLocation(program, 'u_offset'), offsetX, offsetY);
       gl.uniform3fv(gl.getUniformLocation(program, 'u_color'), color);
 
       gl.drawArrays(gl.TRIANGLES, 0, drawn);
