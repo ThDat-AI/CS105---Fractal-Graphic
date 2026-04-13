@@ -83,8 +83,8 @@ const MandelbrotRenderer = (() => {
 
     const maxIter = Math.round(params.mandel_iter || 200);
     const scale = 1.8 / (params.mandel_zoom || 1.0);
-    const centerX = params.mandel_cx || -0.5;
-    const centerY = params.mandel_cy || 0.0;
+    const centerX = params.mandel_cx ?? -0.5;
+    const centerY = params.mandel_cy ?? 0.0;
     const fractalColor = WebGLUtils.hexToRgb(params.mandel_bg || '#0077cc');
     const bgColor = WebGLUtils.hexToRgb(params.mandel_color || '#ffffff');
 
