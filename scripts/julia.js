@@ -17,7 +17,7 @@ const JuliaRenderer = (() => {
     uniform float u_scale;
     uniform int u_maxIter;
     uniform vec3 u_colorA;
-    uniform vec3 u_colorB;
+    uniform vec3 u_bgColor;
 
     void main() {
       vec2 uv = (gl_FragCoord.xy / u_resolution) * 2.0 - 1.0;
@@ -39,9 +39,9 @@ const JuliaRenderer = (() => {
       }
 
       float t = iter >= float(u_maxIter) ? 0.0 : iter / float(u_maxIter);
-      vec3 color = mix(u_colorA, u_colorB, sqrt(t));
+      vec3 color = mix(u_bgColor, u_colorA, sqrt(t));
       if (iter >= float(u_maxIter)) {
-        color = vec3(0.03, 0.05, 0.12);
+        color = u_bgColor;
       }
       gl_FragColor = vec4(color, 1.0);
     }
@@ -87,11 +87,10 @@ const JuliaRenderer = (() => {
     const cy = params.julia_ci || 0.27;
     const centerX = params.julia_centerX || 0.0;
     const centerY = params.julia_centerY || 0.0;
-    const bg = WebGLUtils.hexToRgb(params.julia_bg || '#05060f');
-    const colorA = WebGLUtils.hexToRgb(params.julia_color || '#de5cff');
-    const colorB = WebGLUtils.hexToRgb(params.julia_color2 || '#24d4ff');
+    const fractalColor = WebGLUtils.hexToRgb(params.julia_bg || '#0077cc');
+    const bgColor = WebGLUtils.hexToRgb(params.julia_color || '#ffffff');
 
-    gl.clearColor(bg[0], bg[1], bg[2], 1.0);
+    gl.clearColor(bgColor[0], bgColor[1], bgColor[2], 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     gl.useProgram(program);
@@ -107,15 +106,15 @@ const JuliaRenderer = (() => {
     const uScale = gl.getUniformLocation(program, 'u_scale');
     const uMaxIter = gl.getUniformLocation(program, 'u_maxIter');
     const uColorA = gl.getUniformLocation(program, 'u_colorA');
-    const uColorB = gl.getUniformLocation(program, 'u_colorB');
+    const uBgColor = gl.getUniformLocation(program, 'u_bgColor');
 
     gl.uniform2f(uResolution, canvas.width, canvas.height);
     gl.uniform2f(uC, cx, cy);
     gl.uniform2f(uCenter, centerX, centerY);
     gl.uniform1f(uScale, scale);
     gl.uniform1i(uMaxIter, maxIter);
-    gl.uniform3fv(uColorA, colorA);
-    gl.uniform3fv(uColorB, colorB);
+    gl.uniform3fv(uColorA, fractalColor);
+    gl.uniform3fv(uBgColor, bgColor);
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     return maxIter;

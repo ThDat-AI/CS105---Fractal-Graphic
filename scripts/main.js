@@ -330,7 +330,7 @@
     // ================= MANDELBROT + JULIA =================
     else if (fractalKey === 'mandelbrot' || fractalKey === 'julia') {
       const renderer = fractalKey === 'mandelbrot' ? MandelbrotRenderer : JuliaRenderer;
-      const title = fractalKey === 'mandelbrot' ? 'MANDELBROT SET' : 'JULIA SET';
+      const title = fractalKey === 'mandelbrot' ? 'TẬP MANDELBROT' : 'TẬP JULIA';
       const typeTag = fractalKey === 'mandelbrot' ? 'MANDEL' : 'JULIA';
 
       UI.hideOverlay();

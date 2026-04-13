@@ -94,8 +94,8 @@ const FRACTAL_PARAMS = {
   },
 
   mandelbrot: {
-    label: 'Mandelbrot Set',
-    info: 'Mandelbrot Set. Tập hợp các điểm c trong mặt phẳng phức sao cho hàm f(z) = z² + c không phân kỳ khi lặp từ z=0.',
+    label: 'Tập Mandelbrot',
+    info: 'Tập Mandelbrot. Tập hợp các điểm c trong mặt phẳng phức sao cho hàm f(z) = z² + c không phân kỳ khi lặp từ z=0.',
     params: [
       {
         id: 'mandel_iter',
@@ -105,34 +105,29 @@ const FRACTAL_PARAMS = {
       {
         id: 'mandel_cx',
         name: 'Center X',
-        type: 'range', min: -2.5, max: 1.0, step: 0.01, default: -0.5
+        type: 'range', min: -2.5, max: 1.0, step: 0.001, default: -0.5
       },
       {
         id: 'mandel_cy',
         name: 'Center Y',
-        type: 'range', min: -1.5, max: 1.5, step: 0.01, default: 0.0
+        type: 'range', min: -1.5, max: 1.5, step: 0.001, default: 0.0
       },
       {
         id: 'mandel_bg',
-        name: 'Background Color',
-        type: 'color', default: '#060713'
+        name: 'Fractal Color',
+        type: 'color', default: '#0077cc'
       },
       {
         id: 'mandel_color',
-        name: 'Image Color 1',
-        type: 'color', default: '#00d4ff'
-      },
-      {
-        id: 'mandel_color2',
-        name: 'Image Color 2',
-        type: 'color', default: '#ff7b72'
+        name: 'Background Color',
+        type: 'color', default: '#ffffff'
       }
     ]
   },
 
   julia: {
-    label: 'Julia Set',
-    info: 'Julia Set. Giống Mandelbrot nhưng c là hằng số cố định, còn z là điểm đang xét. Thay đổi C_Real và C_Imag sẽ tạo ra các hình dạng Julia khác nhau.',
+    label: 'Tập Julia',
+    info: 'Tập Julia. Giống Mandelbrot nhưng c là hằng số cố định, còn z là điểm đang xét. Thay đổi C_Real và C_Imag sẽ tạo ra các hình dạng Julia khác nhau.',
     params: [
       {
         id: 'julia_iter',
@@ -142,27 +137,22 @@ const FRACTAL_PARAMS = {
       {
         id: 'julia_cr',
         name: 'C Real (hằng số thực)',
-        type: 'range', min: -2.0, max: 2.0, step: 0.01, default: -0.7
+        type: 'range', min: -2.0, max: 2.0, step: 0.001, default: -0.7
       },
       {
         id: 'julia_ci',
         name: 'C Imaginary (hằng số ảo)',
-        type: 'range', min: -2.0, max: 2.0, step: 0.01, default: 0.27
+        type: 'range', min: -2.0, max: 2.0, step: 0.001, default: 0.27
       },
       {
         id: 'julia_bg',
-        name: 'Background Color',
-        type: 'color', default: '#05060f'
+        name: 'Fractal Color',
+        type: 'color', default: '#0077cc'
       },
       {
         id: 'julia_color',
-        name: 'Image Color 1',
-        type: 'color', default: '#de5cff'
-      },
-      {
-        id: 'julia_color2',
-        name: 'Image Color 2',
-        type: 'color', default: '#24d4ff'
+        name: 'Background Color',
+        type: 'color', default: '#ffffff'
       }
     ]
   }

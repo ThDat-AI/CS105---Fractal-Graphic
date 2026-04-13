@@ -16,7 +16,7 @@ const MandelbrotRenderer = (() => {
     uniform float u_scale;
     uniform int u_maxIter;
     uniform vec3 u_colorA;
-    uniform vec3 u_colorB;
+    uniform vec3 u_bgColor;
 
     void main() {
       vec2 uv = (gl_FragCoord.xy / u_resolution) * 2.0 - 1.0;
@@ -39,9 +39,9 @@ const MandelbrotRenderer = (() => {
       }
 
       float t = iter >= float(u_maxIter) ? 0.0 : iter / float(u_maxIter);
-      vec3 color = mix(u_colorA, u_colorB, sqrt(t));
+      vec3 color = mix(u_bgColor, u_colorA, sqrt(t));
       if (iter >= float(u_maxIter)) {
-        color = vec3(0.02, 0.03, 0.08);
+        color = u_bgColor;
       }
       gl_FragColor = vec4(color, 1.0);
     }
@@ -85,11 +85,10 @@ const MandelbrotRenderer = (() => {
     const scale = 1.8 / (params.mandel_zoom || 1.0);
     const centerX = params.mandel_cx || -0.5;
     const centerY = params.mandel_cy || 0.0;
-    const bg = WebGLUtils.hexToRgb(params.mandel_bg || '#060713');
-    const colorA = WebGLUtils.hexToRgb(params.mandel_color || '#00d4ff');
-    const colorB = WebGLUtils.hexToRgb(params.mandel_color2 || '#ff7b72');
+    const fractalColor = WebGLUtils.hexToRgb(params.mandel_bg || '#0077cc');
+    const bgColor = WebGLUtils.hexToRgb(params.mandel_color || '#ffffff');
 
-    gl.clearColor(bg[0], bg[1], bg[2], 1.0);
+    gl.clearColor(bgColor[0], bgColor[1], bgColor[2], 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     gl.useProgram(program);
@@ -104,14 +103,14 @@ const MandelbrotRenderer = (() => {
     const uScale = gl.getUniformLocation(program, 'u_scale');
     const uMaxIter = gl.getUniformLocation(program, 'u_maxIter');
     const uColorA = gl.getUniformLocation(program, 'u_colorA');
-    const uColorB = gl.getUniformLocation(program, 'u_colorB');
+    const uBgColor = gl.getUniformLocation(program, 'u_bgColor');
 
     gl.uniform2f(uResolution, canvas.width, canvas.height);
     gl.uniform2f(uCenter, centerX, centerY);
     gl.uniform1f(uScale, scale);
     gl.uniform1i(uMaxIter, maxIter);
-    gl.uniform3fv(uColorA, colorA);
-    gl.uniform3fv(uColorB, colorB);
+    gl.uniform3fv(uColorA, fractalColor);
+    gl.uniform3fv(uBgColor, bgColor);
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     return maxIter;
