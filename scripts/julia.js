@@ -83,8 +83,8 @@ const JuliaRenderer = (() => {
 
     const maxIter = Math.round(params.julia_iter || 200);
     const scale = 1.8 / (params.julia_zoom || 1.0);
-    const cx = params.julia_cr || -0.7;
-    const cy = params.julia_ci || 0.27;
+    const cx = params.julia_cr ?? -0.7;
+    const cy = params.julia_ci ?? 0.27;
     const centerX = params.julia_centerX || 0.0;
     const centerY = params.julia_centerY || 0.0;
     const fractalColor = WebGLUtils.hexToRgb(params.julia_bg || '#0077cc');
