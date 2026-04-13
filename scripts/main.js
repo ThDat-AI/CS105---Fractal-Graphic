@@ -21,6 +21,7 @@
     if (typeof SierpinskiCarpetRenderer !== 'undefined') SierpinskiCarpetRenderer.stop();
     if (typeof MandelbrotRenderer !== 'undefined') MandelbrotRenderer.stop();
     if (typeof JuliaRenderer !== 'undefined') JuliaRenderer.stop();
+    if (typeof MinkowskiRenderer !== 'undefined') MinkowskiRenderer.stop();
   }
 
   // ── Render dispatcher ──────────────────────────────────────────────────
@@ -146,6 +147,35 @@
 
           hasRendered = true;
           lastFractalKey = fractalKey;
+        });
+      }
+
+      hasRendered = true;
+      lastFractalKey = fractalKey;
+    }
+
+    // ================= MINKOWSKI =================
+    else if (fractalKey === 'minkowski') {
+      UI.hideOverlay();
+      UI.setCanvasLabel('RENDERING…');
+      document.body.classList.add('rendering');
+
+      if (instant && hasRendered && lastFractalKey === fractalKey) {
+        const t0 = performance.now();
+        const verts = MinkowskiRenderer.render(canvas, params);
+        const elapsed = (performance.now() - t0).toFixed(0);
+
+        document.body.classList.remove('rendering');
+        UI.setCanvasLabel('MINKOWSKI CURVE — LEVEL ' + Math.round(params.mink_levels), true);
+        UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), 'MINKOWSKI', verts);
+      } else {
+        const t0 = performance.now();
+        MinkowskiRenderer.renderAnimated(canvas, params, (verts) => {
+          const elapsed = (performance.now() - t0).toFixed(0);
+
+          document.body.classList.remove('rendering');
+          UI.setCanvasLabel('MINKOWSKI CURVE — LEVEL ' + Math.round(params.mink_levels), true);
+          UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), 'MINKOWSKI', verts);
         });
       }
 
