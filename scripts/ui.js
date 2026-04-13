@@ -9,7 +9,6 @@ const UI = (() => {
   const resetBtn         = document.getElementById('resetBtn');
   const canvasOverlay    = document.getElementById('canvasOverlay');
   const canvasLabel      = document.getElementById('canvasLabel');
-  const statFps          = document.getElementById('statFps');
   const statType         = document.getElementById('statType');
   const statIter         = document.getElementById('statIter');
 
@@ -73,9 +72,15 @@ const UI = (() => {
           <input type="number"
             id="${p.id}" name="${p.id}"
             min="${p.min}" max="${p.max}" step="${p.step}" value="${p.default}"
+            data-autorender="true"
           />
         `;
         paramsContainer.appendChild(group);
+
+        const input = document.getElementById(p.id);
+        input.addEventListener('input', () => {
+          triggerAutoRender();
+        });
 
       } else if (p.type === 'color') {
         group.innerHTML = `
@@ -114,10 +119,9 @@ const UI = (() => {
     return result;
   }
 
-  function setStats(fps, type, iter) {
-    statFps.textContent  = fps  !== null ? fps  : '—';
+  function setStats(type, verts) {
     statType.textContent = type !== null ? type : '—';
-    statIter.textContent = iter !== null ? iter : '—';
+    statIter.textContent = verts !== null ? verts : '—';
   }
 
   function setCanvasLabel(text, active = false) {
@@ -145,6 +149,8 @@ const UI = (() => {
 
     fractalSelect.addEventListener('change', () => {
       buildParams(fractalSelect.value);
+      // Auto-render when changing fractal type
+      triggerAutoRender();
     });
 
     resetBtn.addEventListener('click', () => {

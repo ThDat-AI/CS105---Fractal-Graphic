@@ -9,18 +9,13 @@ const FRACTAL_PARAMS = {
       {
         id: 'koch_levels',
         name: 'Levels (Cấp độ đệ quy)',
-        type: 'range', min: 1, max: 7, step: 1, default: 4,
-        hint: 'Số lần lặp. Level 7 có thể chậm hơn.'
+        type: 'range', min: 0, max: 10, step: 1, default: 4,
+        hint: 'Số lần lặp. Level 10 có thể chậm hơn.'
       },
       {
         id: 'koch_color_inner',
         name: 'Inner Color',
         type: 'color', default: '#0077cc'
-      },
-      {
-        id: 'koch_color_outer',
-        name: 'Outer Color',
-        type: 'color', default: '#1a9e3f'
       },
       {
         id: 'koch_bg',
@@ -49,14 +44,19 @@ const FRACTAL_PARAMS = {
       {
         id: 'mink_color',
         name: 'Line Color',
-        type: 'color', default: '#ff6b35'
+        type: 'color', default: '#0077cc'
+      },
+      {
+        id: 'mink_bg',
+        name: 'Background Color',
+        type: 'color', default: '#f8fbff'
       }
     ]
   },
 
   sierpinski_triangle: {
     label: 'Sierpiński Triangle — Tam Giác Sierpiński',
-    info: 'Tam giác Sierpiński. Tạo bằng cách chia đệ quy một tam giác thành 4 tam giác nhỏ và loại bỏ tam giác ở giữa. Sẽ được cài đặt trong phiên bản tiếp theo.',
+    info: 'Tam giác Sierpiński. Tạo bằng cách chia đệ quy một tam giác thành 4 tam giác nhỏ và loại bỏ tam giác ở giữa.',
     params: [
       {
         id: 'sier_t_levels',
@@ -66,19 +66,19 @@ const FRACTAL_PARAMS = {
       {
         id: 'sier_t_color',
         name: 'Triangle Color',
-        type: 'color', default: '#3c0bc2'
+        type: 'color', default: '#0077cc'
       },
       {
         id: 'sier_t_bg',
         name: 'Background Color',
-        type: 'color', default: '#ffffff'
+        type: 'color', default: '#f8fbff'
       }
     ]
   },
 
   sierpinski_carpet: {
     label: 'Sierpiński Carpet — Hình Vuông Sierpiński',
-    info: 'Thảm Sierpiński. Mỗi hình vuông được chia thành 9 ô vuông nhỏ và ô giữa bị xóa đi, lặp lại đệ quy. Sẽ được cài đặt trong phiên bản tiếp theo.',
+    info: 'Thảm Sierpiński. Mỗi hình vuông được chia thành 9 ô vuông nhỏ và ô giữa bị xóa đi, lặp lại đệ quy.',
     params: [
       {
         id: 'sier_c_levels',
@@ -88,14 +88,20 @@ const FRACTAL_PARAMS = {
       {
         id: 'sier_c_color',
         name: 'Fill Color',
-        type: 'color', default: '#ff3366'
+        type: 'color', default: '#0077cc'
+      },
+      {
+        id: 'sier_c_bg',
+        name: 'Background Color',
+        type: 'color', default: '#f8fbff'
+
       }
     ]
   },
 
   mandelbrot: {
     label: 'Mandelbrot Set',
-    info: 'Mandelbrot Set (chưa cài đặt). Tập hợp các điểm c trong mặt phẳng phức sao cho hàm f(z) = z² + c không phân kỳ khi lặp từ z=0. Sẽ được cài đặt trong phiên bản tiếp theo.',
+    info: 'Mandelbrot Set. Tập hợp các điểm c trong mặt phẳng phức sao cho hàm f(z) = z² + c không phân kỳ khi lặp từ z=0.',
     params: [
       {
         id: 'mandel_iter',
@@ -105,24 +111,39 @@ const FRACTAL_PARAMS = {
       {
         id: 'mandel_cx',
         name: 'Center X',
-        type: 'number', min: -2.5, max: 1.0, step: 0.001, default: -0.5
+        type: 'range', min: -2.5, max: 1.0, step: 0.01, default: -0.5
       },
       {
         id: 'mandel_cy',
         name: 'Center Y',
-        type: 'number', min: -1.5, max: 1.5, step: 0.001, default: 0.0
+        type: 'range', min: -1.5, max: 1.5, step: 0.01, default: 0.0
       },
       {
         id: 'mandel_zoom',
         name: 'Zoom',
         type: 'range', min: 0.5, max: 100, step: 0.5, default: 1.0
+      },
+      {
+        id: 'mandel_bg',
+        name: 'Background Color',
+        type: 'color', default: '#060713'
+      },
+      {
+        id: 'mandel_color',
+        name: 'Image Color 1',
+        type: 'color', default: '#00d4ff'
+      },
+      {
+        id: 'mandel_color2',
+        name: 'Image Color 2',
+        type: 'color', default: '#ff7b72'
       }
     ]
   },
 
   julia: {
     label: 'Julia Set',
-    info: 'Julia Set (chưa cài đặt). Giống Mandelbrot nhưng c là hằng số cố định, còn z là điểm đang xét. Thay đổi C_Real và C_Imag sẽ tạo ra các hình dạng Julia khác nhau. Sẽ được cài đặt trong phiên bản tiếp theo.',
+    info: 'Julia Set. Giống Mandelbrot nhưng c là hằng số cố định, còn z là điểm đang xét. Thay đổi C_Real và C_Imag sẽ tạo ra các hình dạng Julia khác nhau.',
     params: [
       {
         id: 'julia_iter',
@@ -132,17 +153,32 @@ const FRACTAL_PARAMS = {
       {
         id: 'julia_cr',
         name: 'C Real (hằng số thực)',
-        type: 'number', min: -2.0, max: 2.0, step: 0.01, default: -0.7
+        type: 'range', min: -2.0, max: 2.0, step: 0.01, default: -0.7
       },
       {
         id: 'julia_ci',
         name: 'C Imaginary (hằng số ảo)',
-        type: 'number', min: -2.0, max: 2.0, step: 0.01, default: 0.27
+        type: 'range', min: -2.0, max: 2.0, step: 0.01, default: 0.27
       },
       {
         id: 'julia_zoom',
         name: 'Zoom',
         type: 'range', min: 0.5, max: 10, step: 0.1, default: 1.0
+      },
+      {
+        id: 'julia_bg',
+        name: 'Background Color',
+        type: 'color', default: '#05060f'
+      },
+      {
+        id: 'julia_color',
+        name: 'Image Color 1',
+        type: 'color', default: '#de5cff'
+      },
+      {
+        id: 'julia_color2',
+        name: 'Image Color 2',
+        type: 'color', default: '#24d4ff'
       }
     ]
   }

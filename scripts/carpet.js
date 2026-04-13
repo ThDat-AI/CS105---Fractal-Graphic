@@ -58,7 +58,7 @@ const SierpinskiCarpetRenderer = (() => {
     gl.viewport(0, 0, canvas.width, canvas.height);
 
     const levels = Math.round(params.sier_c_levels || 4);
-    const bg = WebGLUtils.hexToRgb('#f8fbff'); 
+    const bg = WebGLUtils.hexToRgb(params.sier_c_bg || '#f8fbff'); 
     const color = WebGLUtils.hexToRgb(params.sier_c_color || '#ff3366');
 
     const vertices = buildSierpinskiCarpet(levels);
@@ -94,7 +94,7 @@ const SierpinskiCarpetRenderer = (() => {
     gl.viewport(0, 0, canvas.width, canvas.height);
 
     const levels = Math.round(params.sier_c_levels || 4);
-    const bg = WebGLUtils.hexToRgb('#f8fbff');
+    const bg = WebGLUtils.hexToRgb(params.sier_c_bg || '#f8fbff');
     const color = WebGLUtils.hexToRgb(params.sier_c_color || '#ff3366');
 
     const vertices = buildSierpinskiCarpet(levels);

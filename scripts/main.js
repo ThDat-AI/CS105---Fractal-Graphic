@@ -41,7 +41,7 @@
 
         document.body.classList.remove('rendering');
         UI.setCanvasLabel('KOCH SNOWFLAKE — LEVEL ' + Math.round(params.koch_levels), true);
-        UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), 'KOCH', verts);
+        UI.setStats('KOCH', verts);
       } else {
         const t0 = performance.now();
         KochRenderer.renderAnimated(canvas, params, (verts) => {
@@ -73,7 +73,7 @@
 
         document.body.classList.remove('rendering');
         UI.setCanvasLabel('SIERPIŃSKI TRIANGLE — LEVEL ' + Math.round(params.sier_t_levels), true);
-        UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), 'SIERPINSKI', verts);
+        UI.setStats('SIERPINSKI', verts);
       } else {
         const t0 = performance.now();
         SierpinskiTriangleRenderer.renderAnimated(canvas, params, (verts) => {
@@ -81,7 +81,7 @@
 
           document.body.classList.remove('rendering');
           UI.setCanvasLabel('SIERPIŃSKI TRIANGLE — LEVEL ' + Math.round(params.sier_t_levels), true);
-          UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), 'SIERPINSKI', verts);
+          UI.setStats('SIERPINSKI', verts);
         });
       }
 
@@ -102,7 +102,7 @@
 
         document.body.classList.remove('rendering');
         UI.setCanvasLabel('SIERPIŃSKI CARPET — LEVEL ' + Math.round(params.sier_c_levels), true);
-        UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), 'SIERPINSKI', verts);
+        UI.setStats('SIERPINSKI', verts);
       } else {
         const t0 = performance.now();
         SierpinskiCarpetRenderer.renderAnimated(canvas, params, (verts) => {
@@ -110,7 +110,7 @@
 
           document.body.classList.remove('rendering');
           UI.setCanvasLabel('SIERPIŃSKI CARPET — LEVEL ' + Math.round(params.sier_c_levels), true);
-          UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), 'SIERPINSKI', verts);
+          UI.setStats('SIERPINSKI', verts);
         });
       }
 
@@ -135,7 +135,7 @@
 
         document.body.classList.remove('rendering');
         UI.setCanvasLabel(title, true);
-        UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), typeTag, iter);
+        UI.setStats(typeTag, iter);
       } else {
         const t0 = performance.now();
         renderer.renderAnimated(canvas, params, (iter) => {
@@ -143,7 +143,7 @@
 
           document.body.classList.remove('rendering');
           UI.setCanvasLabel(title, true);
-          UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), typeTag, iter);
+          UI.setStats(typeTag, iter);
 
           hasRendered = true;
           lastFractalKey = fractalKey;
@@ -167,7 +167,7 @@
 
         document.body.classList.remove('rendering');
         UI.setCanvasLabel('MINKOWSKI CURVE — LEVEL ' + Math.round(params.mink_levels), true);
-        UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), 'MINKOWSKI', verts);
+        UI.setStats('MINKOWSKI', verts);
       } else {
         const t0 = performance.now();
         MinkowskiRenderer.renderAnimated(canvas, params, (verts) => {
@@ -175,7 +175,7 @@
 
           document.body.classList.remove('rendering');
           UI.setCanvasLabel('MINKOWSKI CURVE — LEVEL ' + Math.round(params.mink_levels), true);
-          UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), 'MINKOWSKI', verts);
+          UI.setStats('MINKOWSKI', verts);
         });
       }
 
@@ -191,7 +191,7 @@
 
       const name = FRACTAL_PARAMS[fractalKey]?.label || fractalKey;
       UI.setCanvasLabel('NOT IMPLEMENTED YET');
-      UI.setStats('—', fractalKey.toUpperCase(), '—');
+      UI.setStats('—', '—');
 
       UI.showOverlay();
     }
@@ -204,7 +204,7 @@
 
     UI.showOverlay();
     UI.setCanvasLabel('NO SIGNAL');
-    UI.setStats(null, null, null);
+    UI.setStats(null, null);
 
     fitCanvas();
 

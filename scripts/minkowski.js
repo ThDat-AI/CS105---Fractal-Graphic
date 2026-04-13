@@ -110,8 +110,9 @@ const MinkowskiRenderer = (() => {
     WebGLUtils.resizeCanvas(canvas);
     gl.viewport(0, 0, canvas.width, canvas.height);
 
-    // Clear background (mặc định đen)
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    // Clear background
+    const bg = WebGLUtils.hexToRgb(params.mink_bg || '#000000');
+    gl.clearColor(bg[0], bg[1], bg[2], 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     const levels = Math.round(params.mink_levels || 3);
@@ -169,6 +170,7 @@ const MinkowskiRenderer = (() => {
 
     const levels = Math.round(params.mink_levels || 3);
     const color = WebGLUtils.hexToRgb(params.mink_color || '#ff6b35');
+    const bg = WebGLUtils.hexToRgb(params.mink_bg || '#000000');
 
     const vertices = buildMinkowskiCurve(levels);
     const totalVerts = vertices.length / 2;
@@ -193,7 +195,7 @@ const MinkowskiRenderer = (() => {
       // Số lượng đỉnh cần là bội của 2
       const drawCount = Math.floor(drawn / 2) * 2;
 
-      gl.clearColor(0.0, 0.0, 0.0, 1.0);
+      gl.clearColor(bg[0], bg[1], bg[2], 1.0);
       gl.clear(gl.COLOR_BUFFER_BIT);
 
       gl.useProgram(program);
