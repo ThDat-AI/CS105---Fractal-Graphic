@@ -1,19 +1,11 @@
 // scripts/main.js
-// Entry point: kết nối UI và renderer
-
 (function () {
   const canvas = document.getElementById('glCanvas');
-  const canvasWrapper = canvas.parentElement;
-  const miniMapPanel = document.getElementById('miniMapPanel');
   const miniMapCanvas = document.getElementById('miniMapCanvas');
   const miniMapNote = document.getElementById('miniMapNote');
+  const miniMapPanel = document.getElementById('miniMapPanel');
 
-  const miniMapState = {
-    bounds: { minX: -2.5, maxX: 1.0, minY: -1.5, maxY: 1.5 },
-    baseImage: null,
-    prepared: false
-  };
-
+  // --- STATE QUẢN LÝ VIEW ---
   const viewState = {
     mandelbrot: { zoom: 1.0, centerX: -0.5, centerY: 0.0 },
     julia:      { zoom: 1.0, centerX:  0.0, centerY: 0.0 },
@@ -23,143 +15,218 @@
     sierpinski_carpet:   { zoom: 1.0, offsetX: 0, offsetY: 0 }
   };
 
-  let isPanning = false;
-  let panAnchor = { x: 0, y: 0 };
-  let panStart = { x: 0, y: 0 };
+  // --- STATE RIÊNG CHO MINIMAP (WEBGL) ---
+  const miniMapState = {
+    zoom: 0.8,
+    centerX: -0.5,
+    centerY: 0.0,
+    isPanning: false,    // Chuột phải
+    isSelecting: false,  // Chuột trái (Drag)
+    panAnchor: { x: 0, y: 0 },
+    panStart: { x: 0, y: 0 }
+  };
 
-  function isInMainCardioidOrBulb(cx, cy) {
-    const x = cx - 0.25;
-    const q = x * x + cy * cy;
-    const inCardioid = q * (q + x) < 0.25 * cy * cy;
-    const inPeriod2Bulb = (cx + 1.0) * (cx + 1.0) + cy * cy < 0.0625;
-    return inCardioid || inPeriod2Bulb;
-  }
+  let isPanningMain = false;
+  let panAnchorMain = { x: 0, y: 0 };
+  let panStartMain = { x: 0, y: 0 };
 
-  function escapeIterations(cx, cy, maxIter) {
-    if (isInMainCardioidOrBulb(cx, cy)) return maxIter;
-    let zx = 0;
-    let zy = 0;
-    let zx2 = 0;
-    let zy2 = 0;
-    let iter = 0;
+  // ========================================================
+  // 1. MINIMAP RENDERER (WEBGL)
+  // ========================================================
+  const MiniMapRenderer = {
+    gl: null,
+    program: null,
+    locations: {},
 
-    while (iter < maxIter && zx2 + zy2 <= 4.0) {
-      zy = 2.0 * zx * zy + cy;
-      zx = zx2 - zy2 + cx;
-      zx2 = zx * zx;
-      zy2 = zy * zy;
-      iter++;
-    }
-    return iter;
-  }
+    init(canvas) {
+      this.gl = canvas.getContext('webgl');
+      const vs = `
+        attribute vec2 position;
+        void main() { gl_Position = vec4(position, 0.0, 1.0); }
+      `;
+      const fs = `
+        precision highp float;
+        uniform vec2 u_res;
+        uniform vec2 u_center;
+        uniform float u_zoom;
+        uniform vec2 u_juliaC;
+        
+        void main() {
+          vec2 uv = (gl_FragCoord.xy / u_res.xy) * 2.0 - 1.0;
+          float aspect = u_res.x / u_res.y;
+          uv.x *= aspect;
+          
+          vec2 c = uv * (1.5 / u_zoom) + u_center;
+          vec2 z = vec2(0.0);
+          float iter = 0.0;
+          for (int i = 0; i < 100; i++) {
+            z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + c;
+            if (length(z) > 2.0) break;
+            iter++;
+          }
 
-  function buildMiniMapBase() {
-    if (!miniMapCanvas) return;
-    const ctx = miniMapCanvas.getContext('2d');
-    if (!ctx) return;
-
-    const w = miniMapCanvas.width;
-    const h = miniMapCanvas.height;
-    const img = ctx.createImageData(w, h);
-    const maxIter = 64;
-    const { minX, maxX, minY, maxY } = miniMapState.bounds;
-
-    for (let py = 0; py < h; py++) {
-      for (let px = 0; px < w; px++) {
-        const tx = px / (w - 1);
-        const ty = py / (h - 1);
-        const cx = minX + tx * (maxX - minX);
-        const cy = maxY - ty * (maxY - minY);
-        const it = escapeIterations(cx, cy, maxIter);
-        const i = (py * w + px) * 4;
-
-        if (it >= maxIter) {
-          img.data[i] = 10;
-          img.data[i + 1] = 16;
-          img.data[i + 2] = 30;
-        } else {
-          const t = it / maxIter;
-          img.data[i] = Math.round(25 + 210 * t);
-          img.data[i + 1] = Math.round(30 + 120 * t * t);
-          img.data[i + 2] = Math.round(60 + 185 * (1.0 - t));
+          // Vẽ điểm Marker (vị trí Julia C)
+          float distToC = length(c - u_juliaC);
+          vec3 col = iter == 100.0 ? vec3(0.05, 0.1, 0.2) : 0.5 + 0.5*cos(3.0 + iter*0.15 + vec3(0.0,0.6,1.0));
+          if (distToC < 0.03 / u_zoom) col = vec3(1.0, 0.0, 0.0); // Chấm đỏ
+          
+          gl_FragColor = vec4(col, 1.0);
         }
-        img.data[i + 3] = 255;
-      }
+      `;
+      this.program = this.createProgram(vs, fs);
+      this.locations = {
+        res: this.gl.getUniformLocation(this.program, 'u_res'),
+        center: this.gl.getUniformLocation(this.program, 'u_center'),
+        zoom: this.gl.getUniformLocation(this.program, 'u_zoom'),
+        juliaC: this.gl.getUniformLocation(this.program, 'u_juliaC')
+      };
+      
+      const buffer = this.gl.createBuffer();
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
+      this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), this.gl.STATIC_DRAW);
+      const pos = this.gl.getAttribLocation(this.program, 'position');
+      this.gl.enableVertexAttribArray(pos);
+      this.gl.vertexAttribPointer(pos, 2, this.gl.FLOAT, false, 0, 0);
+    },
+
+    createProgram(vsSource, fsSource) {
+      const gl = this.gl;
+      const loadShader = (type, source) => {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, source);
+        gl.compileShader(s);
+        return s;
+      };
+      const program = gl.createProgram();
+      gl.attachShader(program, loadShader(gl.VERTEX_SHADER, vsSource));
+      gl.attachShader(program, loadShader(gl.FRAGMENT_SHADER, fsSource));
+      gl.linkProgram(program);
+      return program;
+    },
+
+    draw(juliaCR, juliaCI) {
+      if (!this.gl) return;
+      this.gl.viewport(0, 0, miniMapCanvas.width, miniMapCanvas.height);
+      this.gl.useProgram(this.program);
+      this.gl.uniform2f(this.locations.res, miniMapCanvas.width, miniMapCanvas.height);
+      this.gl.uniform2f(this.locations.center, miniMapState.centerX, miniMapState.centerY);
+      this.gl.uniform1f(this.locations.zoom, miniMapState.zoom);
+      this.gl.uniform2f(this.locations.juliaC, juliaCR, juliaCI);
+      this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
     }
+  };
 
-    miniMapState.baseImage = img;
-    miniMapState.prepared = true;
-  }
+  // ========================================================
+  // 2. LOGIC TƯƠNG TÁC MINIMAP
+  // ========================================================
 
-  function mapComplexToMiniMap(cx, cy) {
-    const { minX, maxX, minY, maxY } = miniMapState.bounds;
-    const tx = (cx - minX) / (maxX - minX);
-    const ty = 1.0 - (cy - minY) / (maxY - minY);
+  function getMiniMapCoords(e) {
+    const rect = miniMapCanvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const aspect = rect.width / rect.height;
+    const uvx = (x / rect.width * 2 - 1) * aspect;
+    const uvy = 1 - (y / rect.height * 2);
+    const scale = 1.5 / miniMapState.zoom;
+
     return {
-      x: tx * miniMapCanvas.width,
-      y: ty * miniMapCanvas.height,
-      visible: tx >= 0 && tx <= 1 && ty >= 0 && ty <= 1
+      cReal: uvx * scale + miniMapState.centerX,
+      cImag: uvy * scale + miniMapState.centerY
     };
   }
 
-  function drawMiniMapForJulia(cReal, cImag) {
-    if (!miniMapPanel || !miniMapCanvas) return;
-    if (!miniMapState.prepared) {
-      buildMiniMapBase();
-      if (!miniMapState.prepared) return;
+  function updateJuliaFromMiniMap(e) {
+    const { cReal, cImag } = getMiniMapCoords(e);
+    
+    // Switch UI sang Julia
+    const selectEl = document.getElementById('fractalSelect');
+    if (selectEl.value !== 'julia') {
+      selectEl.value = 'julia';
+      selectEl.dispatchEvent(new Event('change'));
     }
 
-    const ctx = miniMapCanvas.getContext('2d');
-    if (!ctx) return;
-    ctx.putImageData(miniMapState.baseImage, 0, 0);
-
-    const p = mapComplexToMiniMap(cReal, cImag);
-    const markerX = Math.max(0, Math.min(miniMapCanvas.width, p.x));
-    const markerY = Math.max(0, Math.min(miniMapCanvas.height, p.y));
-
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.moveTo(markerX - 8, markerY);
-    ctx.lineTo(markerX + 8, markerY);
-    ctx.moveTo(markerX, markerY - 8);
-    ctx.lineTo(markerX, markerY + 8);
-    ctx.stroke();
-
-    ctx.lineWidth = 2.0;
-    ctx.strokeStyle = '#ff4d4f';
-    ctx.beginPath();
-    ctx.arc(markerX, markerY, 4.5, 0, Math.PI * 2);
-    ctx.stroke();
-
-    if (miniMapNote) {
-      const outOfRange = p.visible ? '' : ' (ngoài khung)';
-      miniMapNote.textContent = `c = (${cReal.toFixed(3)}, ${cImag.toFixed(3)})${outOfRange}`;
+    // Cập nhật Input
+    const crInput = document.getElementById('julia_cr');
+    const ciInput = document.getElementById('julia_ci');
+    if (crInput) { 
+      crInput.value = cReal.toFixed(3); 
+      document.getElementById('val_julia_cr').textContent = crInput.value;
     }
-    miniMapPanel.classList.remove('hidden');
+    if (ciInput) { 
+      ciInput.value = cImag.toFixed(3); 
+      document.getElementById('val_julia_ci').textContent = ciInput.value;
+    }
+
+    miniMapNote.textContent = `c = (${cReal.toFixed(3)}, ${cImag.toFixed(3)})`;
+    handleRender('julia', UI.getParams('julia'), true);
   }
 
-  function hideMiniMap() {
-    if (miniMapPanel) miniMapPanel.classList.add('hidden');
-  }
+  miniMapCanvas.addEventListener('contextmenu', e => e.preventDefault());
+
+  miniMapCanvas.addEventListener('mousedown', (e) => {
+    if (e.button === 0) { // Chuột trái: Chọn tọa độ
+      miniMapState.isSelecting = true;
+      updateJuliaFromMiniMap(e);
+    } else if (e.button === 2) { // Chuột phải: Pan
+      miniMapState.isPanning = true;
+      miniMapState.panAnchor = { x: e.clientX, y: e.clientY };
+      miniMapState.panStart = { x: miniMapState.centerX, y: miniMapState.centerY };
+    }
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (miniMapState.isSelecting) {
+      updateJuliaFromMiniMap(e);
+    }
+    if (miniMapState.isPanning) {
+      const dx = e.clientX - miniMapState.panAnchor.x;
+      const dy = e.clientY - miniMapState.panAnchor.y;
+      const rect = miniMapCanvas.getBoundingClientRect();
+      const scale = 3.0 / (miniMapState.zoom * rect.height);
+      
+      miniMapState.centerX = miniMapState.panStart.x - dx * scale;
+      miniMapState.centerY = miniMapState.panStart.y + dy * scale;
+      
+      const p = UI.getParams('julia');
+      MiniMapRenderer.draw(p.julia_cr, p.julia_ci);
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    miniMapState.isSelecting = false;
+    miniMapState.isPanning = false;
+  });
+
+  miniMapCanvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const zoomFactor = Math.exp(-e.deltaY * 0.0015);
+    miniMapState.zoom = Math.max(0.2, Math.min(100, miniMapState.zoom * zoomFactor));
+    const p = UI.getParams('julia');
+    MiniMapRenderer.draw(p.julia_cr, p.julia_ci);
+  }, { passive: false });
+
+  // ========================================================
+  // 3. HỆ THỐNG RENDER CHÍNH (TỪ FILE CŨ)
+  // ========================================================
 
   function fitCanvas() {
     const wrapper = canvas.parentElement;
     const size = Math.min(wrapper.clientWidth, wrapper.clientHeight);
     canvas.width = size;
     canvas.height = size;
+    
+    // Fix size minimap canvas theo thuộc tính tự nhiên
+    miniMapCanvas.width = 300;
+    miniMapCanvas.height = 300;
   }
 
   function resetViewState(fractalKey) {
     if (fractalKey === 'mandelbrot') {
-      viewState.mandelbrot.zoom = 1.0;
-      viewState.mandelbrot.centerX = -0.5;
-      viewState.mandelbrot.centerY = 0.0;
+      viewState.mandelbrot = { zoom: 1.0, centerX: -0.5, centerY: 0.0 };
     } else if (fractalKey === 'julia') {
-      viewState.julia.zoom = 1.0;
-      viewState.julia.centerX = 0.0;
-      viewState.julia.centerY = 0.0;
-    } else if (fractalKey === 'koch' || fractalKey === 'minkowski' || fractalKey === 'sierpinski_triangle' || fractalKey === 'sierpinski_carpet') {
+      viewState.julia = { zoom: 1.0, centerX: 0.0, centerY: 0.0 };
+    } else if (viewState[fractalKey]) {
       viewState[fractalKey].zoom = 1.0;
       viewState[fractalKey].offsetX = 0;
       viewState[fractalKey].offsetY = 0;
@@ -168,456 +235,177 @@
 
   function getRenderParams(fractalKey, params) {
     const out = Object.assign({}, params);
-    if (fractalKey === 'mandelbrot') {
-      const state = viewState.mandelbrot;
-      state.centerX = params.mandel_cx;
-      state.centerY = params.mandel_cy;
-      out.mandel_zoom = state.zoom;
-      out.mandel_cx = state.centerX;
-      out.mandel_cy = state.centerY;
-    }
-    if (fractalKey === 'julia') {
-      const state = viewState.julia;
-      out.julia_zoom = state.zoom;
-      out.julia_centerX = state.centerX;
-      out.julia_centerY = state.centerY;
-    }
-    if (fractalKey === 'koch' || fractalKey === 'minkowski' || fractalKey === 'sierpinski_triangle' || fractalKey === 'sierpinski_carpet') {
-      const state = viewState[fractalKey];
-      out.zoom = state.zoom;
-      out.offsetX = state.offsetX;
-      out.offsetY = state.offsetY;
+    if (viewState[fractalKey]) {
+        const state = viewState[fractalKey];
+        if (fractalKey === 'mandelbrot') {
+            out.mandel_zoom = state.zoom;
+            out.mandel_cx = state.centerX;
+            out.mandel_cy = state.centerY;
+        } else if (fractalKey === 'julia') {
+            out.julia_zoom = state.zoom;
+            out.julia_centerX = state.centerX;
+            out.julia_centerY = state.centerY;
+        } else {
+            out.zoom = state.zoom;
+            out.offsetX = state.offsetX;
+            out.offsetY = state.offsetY;
+        }
     }
     return out;
   }
 
-  function getCanvasCoords(event) {
-    const rect = canvas.getBoundingClientRect();
-    return {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
-      width: rect.width,
-      height: rect.height
-    };
-  }
-
-  function pointerToComplex(x, y, width, height, zoom, centerX, centerY) {
-    const aspect = width / height;
-    const uvx = ((x / width) * 2 - 1) * aspect;
-    const uvy = 1 - (y / height) * 2;
-    const scale = 1.8 / zoom;
-    return {
-      x: uvx * scale + centerX,
-      y: uvy * scale + centerY
-    };
-  }
-
-  function handleWheel(event) {
+  // --- Pointer Handlers cho Main Canvas ---
+  function handleMainWheel(event) {
     event.preventDefault();
     const key = document.getElementById('fractalSelect').value;
-    const coords = getCanvasCoords(event);
+    const state = viewState[key];
+    if (!state) return;
 
-    if (key === 'mandelbrot' || key === 'julia') {
-      const zoomFactor = Math.exp(-event.deltaY * 0.0012);
-      const state = viewState[key];
-      const aspect = coords.width / coords.height;
-      const uvx = ((coords.x / coords.width) * 2 - 1) * aspect;
-      const uvy = 1 - (coords.y / coords.height) * 2;
-      const currentScale = 1.8 / state.zoom;
-      const worldX = uvx * currentScale + state.centerX;
-      const worldY = uvy * currentScale + state.centerY;
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const aspect = rect.width / rect.height;
+    const uvx = ((x / rect.width) * 2 - 1) * aspect;
+    const uvy = 1 - (y / rect.height) * 2;
 
-      state.zoom = Math.max(0.1, Math.min(80, state.zoom * zoomFactor));
-      const newScale = 1.8 / state.zoom;
-      state.centerX = worldX - uvx * newScale;
-      state.centerY = worldY - uvy * newScale;
-      handleRender(key, UI.getParams(key), true);
-      return;
+    const zoomFactor = Math.exp(-event.deltaY * 0.0012);
+    const isFractalSet = (key === 'mandelbrot' || key === 'julia');
+    const currentScale = isFractalSet ? (1.8 / state.zoom) : (1.0 / state.zoom);
+    
+    const worldX = isFractalSet ? (uvx * currentScale + state.centerX) : (uvx * currentScale + state.offsetX);
+    const worldY = isFractalSet ? (uvy * currentScale + state.centerY) : (uvy * currentScale + state.offsetY);
+
+    state.zoom *= zoomFactor;
+    const newScale = isFractalSet ? (1.8 / state.zoom) : (1.0 / state.zoom);
+    
+    if (isFractalSet) {
+        state.centerX = worldX - uvx * newScale;
+        state.centerY = worldY - uvy * newScale;
+    } else {
+        state.offsetX = worldX - uvx * newScale;
+        state.offsetY = worldY - uvy * newScale;
     }
-
-    // For Koch, Minkowski, Sierpinski fractals
-    const zoomFactor = Math.exp(event.deltaY * 0.0012);
-    if (key === 'koch' || key === 'minkowski' || key === 'sierpinski_triangle' || key === 'sierpinski_carpet') {
-      const state = viewState[key];
-      const aspect = coords.width / coords.height;
-      const normalizedX = ((coords.x / coords.width) * 2 - 1) * aspect;
-      const normalizedY = 1 - (coords.y / coords.height) * 2;
-      
-      const currentScale = 1.0 / state.zoom;
-      const worldX = normalizedX * currentScale + state.offsetX;
-      const worldY = normalizedY * currentScale + state.offsetY;
-
-      state.zoom = Math.max(0.25, Math.min(12, state.zoom * zoomFactor));
-      const newScale = 1.0 / state.zoom;
-      state.offsetX = worldX - normalizedX * newScale;
-      state.offsetY = worldY - normalizedY * newScale;
-      handleRender(key, UI.getParams(key), true);
-      return;
-    }
-  }
-
-  function handlePointerDown(event) {
-    if (event.button !== 0) return;
-    canvas.setPointerCapture(event.pointerId);
-    isPanning = true;
-    panAnchor = { x: event.clientX, y: event.clientY };
-    const key = document.getElementById('fractalSelect').value;
-    if (key === 'mandelbrot' || key === 'julia') {
-      const state = viewState[key];
-      panStart = { x: state.centerX, y: state.centerY };
-    } else if (key === 'koch' || key === 'minkowski' || key === 'sierpinski_triangle' || key === 'sierpinski_carpet') {
-      const state = viewState[key];
-      panStart = { x: state.offsetX, y: state.offsetY };
-    }
-  }
-
-  function handlePointerMove(event) {
-    if (!isPanning) return;
-    const key = document.getElementById('fractalSelect').value;
-
-    const coords = getCanvasCoords(event);
-    const deltaXpx = event.clientX - panAnchor.x;
-    const deltaYpx = event.clientY - panAnchor.y;
-
-    if (key === 'mandelbrot' || key === 'julia') {
-      const state = viewState[key];
-      const scale = 1.8 / state.zoom;
-      const aspect = coords.width / coords.height;
-      const deltaX = deltaXpx * 2 * aspect * scale / coords.width;
-      const deltaY = deltaYpx * 2 * scale / coords.height;
-
-      state.centerX = panStart.x - deltaX;
-      state.centerY = panStart.y + deltaY;
-
-      if (key === 'mandelbrot') {
-        const cxInput = document.getElementById('mandel_cx');
-        const cyInput = document.getElementById('mandel_cy');
-        const cxVal = document.getElementById('val_mandel_cx');
-        const cyVal = document.getElementById('val_mandel_cy');
-        if (cxInput) { cxInput.value = state.centerX.toFixed(2); }
-        if (cyInput) { cyInput.value = state.centerY.toFixed(2); }
-        if (cxVal) { cxVal.textContent = state.centerX.toFixed(2); }
-        if (cyVal) { cyVal.textContent = state.centerY.toFixed(2); }
-      }
-
-      handleRender(key, UI.getParams(key), true);
-      return;
-    }
-
-    if (key === 'koch' || key === 'minkowski' || key === 'sierpinski_triangle' || key === 'sierpinski_carpet') {
-      const state = viewState[key];
-      const scale = 1.0 / state.zoom;
-      const aspect = coords.width / coords.height;
-      const deltaX = deltaXpx * 2 * aspect * scale / coords.width;
-      const deltaY = deltaYpx * 2 * scale / coords.height;
-
-      state.offsetX = panStart.x + deltaX;
-      state.offsetY = panStart.y - deltaY;
-      handleRender(key, UI.getParams(key), true);
-      return;
-    }
-  }
-
-  function handlePointerUp(event) {
-    if (!isPanning) return;
-    isPanning = false;
-    canvas.releasePointerCapture(event.pointerId);
-  }
-
-  function debounce(fn, delay) {
-    let timer;
-    return (...args) => {
-      clearTimeout(timer);
-      timer = setTimeout(() => fn(...args), delay);
-    };
-  }
-
-  fitCanvas();
-  window.addEventListener('resize', debounce(() => {
-    fitCanvas();
-    const key = document.getElementById('fractalSelect').value;
     handleRender(key, UI.getParams(key), true);
-  }, 120));
+  }
 
-  canvas.addEventListener('wheel', handleWheel, { passive: false });
-  canvas.addEventListener('pointerdown', handlePointerDown);
-  canvas.addEventListener('pointermove', handlePointerMove);
-  canvas.addEventListener('pointerup', handlePointerUp);
-  canvas.addEventListener('pointerleave', handlePointerUp);
+  function handleMainPointerDown(e) {
+    if (e.button !== 0) return;
+    canvas.setPointerCapture(e.pointerId);
+    isPanningMain = true;
+    panAnchorMain = { x: e.clientX, y: e.clientY };
+    const key = document.getElementById('fractalSelect').value;
+    const state = viewState[key];
+    panStartMain = (key === 'mandelbrot' || key === 'julia') 
+        ? { x: state.centerX, y: state.centerY } 
+        : { x: state.offsetX, y: state.offsetY };
+  }
+
+  function handleMainPointerMove(e) {
+    if (!isPanningMain) return;
+    const key = document.getElementById('fractalSelect').value;
+    const state = viewState[key];
+    const rect = canvas.getBoundingClientRect();
+    const dxPx = e.clientX - panAnchorMain.x;
+    const dyPx = e.clientY - panAnchorMain.y;
+    
+    const isFractalSet = (key === 'mandelbrot' || key === 'julia');
+    const scale = isFractalSet ? (1.8 / state.zoom) : (1.0 / state.zoom);
+    const aspect = rect.width / rect.height;
+    
+    const dx = dxPx * 2 * aspect * scale / rect.width;
+    const dy = dyPx * 2 * scale / rect.height;
+
+    if (isFractalSet) {
+        state.centerX = panStartMain.x - dx;
+        state.centerY = panStartMain.y + dy;
+    } else {
+        state.offsetX = panStartMain.x + dx;
+        state.offsetY = panStartMain.y - dy;
+    }
+    handleRender(key, UI.getParams(key), true);
+  }
+
+  // --- Dispatcher Render ---
+  function stopAll() {
+    [KochRenderer, SierpinskiTriangleRenderer, SierpinskiCarpetRenderer, MandelbrotRenderer, JuliaRenderer, MinkowskiRenderer]
+    .forEach(r => r && r.stop && r.stop());
+  }
 
   let hasRendered = false;
-  let lastFractalKey = null;
+  let lastKey = null;
 
-  function stopAllRenderers() {
-    KochRenderer.stop();
-    if (typeof SierpinskiTriangleRenderer !== 'undefined') SierpinskiTriangleRenderer.stop();
-    if (typeof SierpinskiCarpetRenderer !== 'undefined') SierpinskiCarpetRenderer.stop();
-    if (typeof MandelbrotRenderer !== 'undefined') MandelbrotRenderer.stop();
-    if (typeof JuliaRenderer !== 'undefined') JuliaRenderer.stop();
-    if (typeof MinkowskiRenderer !== 'undefined') MinkowskiRenderer.stop();
-  }
-
-  // ── Render dispatcher ──────────────────────────────────────────────────
   function handleRender(fractalKey, params, instant = false) {
     params = getRenderParams(fractalKey, params);
-    stopAllRenderers();
+    stopAll();
 
-    if (fractalKey !== 'julia') {
-      hideMiniMap();
+    if (fractalKey === 'julia') {
+      miniMapPanel.classList.remove('hidden');
+      MiniMapRenderer.draw(params.julia_cr, params.julia_ci);
+    } else {
+      miniMapPanel.classList.add('hidden');
     }
 
-    // ================= KOCH =================
-    if (fractalKey === 'koch') {
-      UI.hideOverlay();
-      UI.setCanvasLabel('RENDERING…');
-      document.body.classList.add('rendering');
+    UI.hideOverlay();
+    UI.setCanvasLabel('RENDERING…');
+    document.body.classList.add('rendering');
 
-      if (instant && hasRendered && lastFractalKey === 'koch') {
-        const t0 = performance.now();
-        const verts = KochRenderer.render(canvas, params);
-        const elapsed = (performance.now() - t0).toFixed(0);
+    const rendererMap = {
+      'koch': KochRenderer,
+      'sierpinski_triangle': SierpinskiTriangleRenderer,
+      'sierpinski_carpet': SierpinskiCarpetRenderer,
+      'mandelbrot': MandelbrotRenderer,
+      'julia': JuliaRenderer,
+      'minkowski': MinkowskiRenderer
+    };
 
+    const renderer = rendererMap[fractalKey];
+    if (renderer) {
+      const t0 = performance.now();
+      const onDone = (res) => {
         document.body.classList.remove('rendering');
-        UI.setCanvasLabel('KOCH SNOWFLAKE — LEVEL ' + Math.round(params.koch_levels), true);
-        UI.setStats('KOCH', verts);
+        UI.setCanvasLabel(fractalKey.toUpperCase().replace('_', ' '), true);
+        UI.setStats(fractalKey.toUpperCase(), res);
+        hasRendered = true;
+        lastKey = fractalKey;
+      };
+
+      if (instant && hasRendered && lastKey === fractalKey) {
+        const res = renderer.render(canvas, params);
+        onDone(res);
       } else {
-        const t0 = performance.now();
-        KochRenderer.renderAnimated(canvas, params, (verts) => {
-          const elapsed = (performance.now() - t0).toFixed(0);
-
-          document.body.classList.remove('rendering');
-          UI.setCanvasLabel('KOCH SNOWFLAKE — LEVEL ' + Math.round(params.koch_levels), true);
-          UI.setStats(elapsed < 2 ? '>500' : Math.round(1000 / elapsed), 'KOCH', verts);
-
-          hasRendered = true;
-          lastFractalKey = 'koch';
-        });
+        renderer.renderAnimated(canvas, params, onDone);
       }
-
-      hasRendered = true;
-      lastFractalKey = 'koch';
-    }
-
-    // ================= SIERPINSKI TRIANGLE =================
-    else if (fractalKey === 'sierpinski_triangle') {
-      UI.hideOverlay();
-      UI.setCanvasLabel('RENDERING…');
-      document.body.classList.add('rendering');
-
-      if (instant && hasRendered && lastFractalKey === fractalKey) {
-        const t0 = performance.now();
-        const verts = SierpinskiTriangleRenderer.render(canvas, params);
-        const elapsed = (performance.now() - t0).toFixed(0);
-
-        document.body.classList.remove('rendering');
-        UI.setCanvasLabel('SIERPIŃSKI TRIANGLE — LEVEL ' + Math.round(params.sier_t_levels), true);
-        UI.setStats('SIERPINSKI', verts);
-      } else {
-        const t0 = performance.now();
-        SierpinskiTriangleRenderer.renderAnimated(canvas, params, (verts) => {
-          const elapsed = (performance.now() - t0).toFixed(0);
-
-          document.body.classList.remove('rendering');
-          UI.setCanvasLabel('SIERPIŃSKI TRIANGLE — LEVEL ' + Math.round(params.sier_t_levels), true);
-          UI.setStats('SIERPINSKI', verts);
-        });
-      }
-
-      hasRendered = true;
-      lastFractalKey = fractalKey;
-    }
-
-    // ================= SIERPINSKI CARPET =================
-    else if (fractalKey === 'sierpinski_carpet') {
-      UI.hideOverlay();
-      UI.setCanvasLabel('RENDERING…');
-      document.body.classList.add('rendering');
-
-      if (instant && hasRendered && lastFractalKey === fractalKey) {
-        const t0 = performance.now();
-        const verts = SierpinskiCarpetRenderer.render(canvas, params);
-        const elapsed = (performance.now() - t0).toFixed(0);
-
-        document.body.classList.remove('rendering');
-        UI.setCanvasLabel('SIERPIŃSKI CARPET — LEVEL ' + Math.round(params.sier_c_levels), true);
-        UI.setStats('SIERPINSKI', verts);
-      } else {
-        const t0 = performance.now();
-        SierpinskiCarpetRenderer.renderAnimated(canvas, params, (verts) => {
-          const elapsed = (performance.now() - t0).toFixed(0);
-
-          document.body.classList.remove('rendering');
-          UI.setCanvasLabel('SIERPIŃSKI CARPET — LEVEL ' + Math.round(params.sier_c_levels), true);
-          UI.setStats('SIERPINSKI', verts);
-        });
-      }
-
-      hasRendered = true;
-      lastFractalKey = fractalKey;
-    }
-
-    // ================= MANDELBROT + JULIA =================
-    else if (fractalKey === 'mandelbrot' || fractalKey === 'julia') {
-      const renderer = fractalKey === 'mandelbrot' ? MandelbrotRenderer : JuliaRenderer;
-      const title = fractalKey === 'mandelbrot' ? 'TẬP MANDELBROT' : 'TẬP JULIA';
-      const typeTag = fractalKey === 'mandelbrot' ? 'MANDEL' : 'JULIA';
-
-      if (fractalKey === 'julia') {
-        const cReal = params.julia_cr ?? -0.7;
-        const cImag = params.julia_ci ?? 0.27;
-        drawMiniMapForJulia(cReal, cImag);
-      }
-
-      UI.hideOverlay();
-      UI.setCanvasLabel('RENDERING…');
-      document.body.classList.add('rendering');
-
-      if (instant && hasRendered && lastFractalKey === fractalKey) {
-        const t0 = performance.now();
-        const iter = renderer.render(canvas, params);
-        const elapsed = (performance.now() - t0).toFixed(0);
-
-        document.body.classList.remove('rendering');
-        UI.setCanvasLabel(title, true);
-        UI.setStats(typeTag, iter);
-      } else {
-        const t0 = performance.now();
-        renderer.renderAnimated(canvas, params, (iter) => {
-          const elapsed = (performance.now() - t0).toFixed(0);
-
-          document.body.classList.remove('rendering');
-          UI.setCanvasLabel(title, true);
-          UI.setStats(typeTag, iter);
-
-          hasRendered = true;
-          lastFractalKey = fractalKey;
-        });
-      }
-
-      hasRendered = true;
-      lastFractalKey = fractalKey;
-    }
-
-    // ================= MINKOWSKI =================
-    else if (fractalKey === 'minkowski') {
-      UI.hideOverlay();
-      UI.setCanvasLabel('RENDERING…');
-      document.body.classList.add('rendering');
-
-      if (instant && hasRendered && lastFractalKey === fractalKey) {
-        const t0 = performance.now();
-        const verts = MinkowskiRenderer.render(canvas, params);
-        const elapsed = (performance.now() - t0).toFixed(0);
-
-        document.body.classList.remove('rendering');
-        UI.setCanvasLabel('MINKOWSKI CURVE — LEVEL ' + Math.round(params.mink_levels), true);
-        UI.setStats('MINKOWSKI', verts);
-      } else {
-        const t0 = performance.now();
-        MinkowskiRenderer.renderAnimated(canvas, params, (verts) => {
-          const elapsed = (performance.now() - t0).toFixed(0);
-
-          document.body.classList.remove('rendering');
-          UI.setCanvasLabel('MINKOWSKI CURVE — LEVEL ' + Math.round(params.mink_levels), true);
-          UI.setStats('MINKOWSKI', verts);
-        });
-      }
-
-      hasRendered = true;
-      lastFractalKey = fractalKey;
-    }
-
-    // ================= FALLBACK =================
-    else {
-      document.body.classList.remove('rendering');
-      hasRendered = false;
-      lastFractalKey = fractalKey;
-
-      const name = FRACTAL_PARAMS[fractalKey]?.label || fractalKey;
-      UI.setCanvasLabel('NOT IMPLEMENTED YET');
-      UI.setStats('—', '—');
-
+    } else {
       UI.showOverlay();
+      document.body.classList.remove('rendering');
     }
   }
 
-  function handleReset() {
-    stopAllRenderers();
-    hasRendered = false;
-    lastFractalKey = null;
+  // --- Init ---
+  fitCanvas();
+  window.addEventListener('resize', () => fitCanvas());
+  
+  canvas.addEventListener('wheel', handleMainWheel, { passive: false });
+  canvas.addEventListener('pointerdown', handleMainPointerDown);
+  canvas.addEventListener('pointermove', handleMainPointerMove);
+  canvas.addEventListener('pointerup', () => isPanningMain = false);
 
-    UI.showOverlay();
-    UI.setCanvasLabel('NO SIGNAL');
-    UI.setStats(null, null);
-    hideMiniMap();
-
-    fitCanvas();
+  UI.init((key, p) => handleRender(key, p, true), () => {
+    stopAll();
     resetViewState(document.getElementById('fractalSelect').value);
-
-    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-    if (gl) {
-      gl.clearColor(0.94, 0.96, 0.99, 1);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-    }
-  }
-
-  // ── Init UI ────────────────────────────────────────────
-  UI.init(
-    (key, params) => handleRender(key, params, true),
-    handleReset
-  );
-
-  document.getElementById('fractalSelect').addEventListener('change', (event) => {
-    resetViewState(event.target.value);
+    handleRender(document.getElementById('fractalSelect').value, UI.getParams(), false);
   });
 
-  document.getElementById('renderBtn').addEventListener('click', () => {
-    const key = document.getElementById('fractalSelect').value;
-    handleRender(key, UI.getParams(key), false);
-  });
-
-  // ── Init WebGL ──────────────────────────────────────────
+  MiniMapRenderer.init(miniMapCanvas);
   KochRenderer.init(canvas);
   SierpinskiTriangleRenderer.init(canvas);
   SierpinskiCarpetRenderer.init(canvas);
   MandelbrotRenderer.init(canvas);
   JuliaRenderer.init(canvas);
 
-  // Auto-render initial fractal on page load
+  // Khởi chạy fractal đầu tiên
   const initialKey = document.getElementById('fractalSelect').value;
   handleRender(initialKey, UI.getParams(initialKey), true);
 
-  // ── Click minimap → render Julia at that c value ──────────────────
-  miniMapCanvas.addEventListener('click', function (event) {
-    const rect = miniMapCanvas.getBoundingClientRect();
-    const px = (event.clientX - rect.left) * (miniMapCanvas.width / rect.width);
-    const py = (event.clientY - rect.top) * (miniMapCanvas.height / rect.height);
-
-    const { minX, maxX, minY, maxY } = miniMapState.bounds;
-    const cReal = minX + (px / miniMapCanvas.width) * (maxX - minX);
-    const cImag = maxY - (py / miniMapCanvas.height) * (maxY - minY);
-
-    // Switch selector to Julia (triggers buildParams in UI)
-    const selectEl = document.getElementById('fractalSelect');
-    selectEl.value = 'julia';
-    selectEl.dispatchEvent(new Event('change'));
-
-    // Set slider values (buildParams is synchronous so inputs exist now)
-    const crInput = document.getElementById('julia_cr');
-    const ciInput = document.getElementById('julia_ci');
-    const crVal   = document.getElementById('val_julia_cr');
-    const ciVal   = document.getElementById('val_julia_ci');
-
-    if (crInput) { crInput.value = cReal.toFixed(3); if (crVal) crVal.textContent = crInput.value; }
-    if (ciInput) { ciInput.value = cImag.toFixed(3); if (ciVal) ciVal.textContent = ciInput.value; }
-
-    handleRender('julia', UI.getParams('julia'), false);
-    drawMiniMapForJulia(cReal, cImag);
-  });
-
-  console.log(
-    '%c[FRACTAL ENGINE]%c WebGL ready.',
-    'color:#0077cc;font-weight:bold',
-    'color:#6a8fa8'
-  );
+  console.log('%c[FRACTAL ENGINE]%c Minimap WebGL & Interaction Ready.', 'color:#0077cc;font-weight:bold', 'color:#6a8fa8');
 })();

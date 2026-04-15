@@ -92,11 +92,15 @@
           <div class="canvas-corner bl"></div>
           <div class="canvas-corner br"></div>
         </div>
-        <div class="mini-map hidden" id="miniMapPanel">
-          <div class="mini-map-title">JULIA C ON MANDELBROT</div>
-          <canvas id="miniMapCanvas" width="180" height="180"></canvas>
-          <div class="mini-map-note" id="miniMapNote">c = (-0.700, 0.270)</div>
-          <div class="mini-map-hint">▸ click để hiện Julia tại điểm c</div>
+        <div id="miniMapPanel" class="mini-map hidden">
+          <div class="mini-map-header">
+            <h3 class="mini-map-title">Mandelbrot Navigator</h3>
+          </div>
+          <canvas id="miniMapCanvas" width="300" height="300"></canvas>
+          <div id="miniMapNote" class="mini-map-note">c = (0.000, 0.000)</div>
+          <div class="mini-map-hint">
+            <b>L-Drag:</b> Chọn C | <b>R-Pan:</b> Di chuyển | <b>Wheel:</b> Phóng to
+          </div>
         </div>
       </div>
       <div class="canvas-label" id="canvasLabel">NO SIGNAL</div>

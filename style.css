@@ -362,59 +362,77 @@ canvas#glCanvas {
   50%      { opacity: 1;  transform: scale(1.08); }
 }
 
+/* ─── MINI MAP (NÂNG CẤP) ─────────────────────────────────────────── */
 .mini-map {
   position: relative;
-  width: 210px;
+  width: 322px; /* 300px canvas + 20px padding + 2px border */
   flex-shrink: 0;
   padding: 10px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 4px 14px rgba(0, 60, 120, 0.16);
-  backdrop-filter: blur(2px);
-  border-radius: 3px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .mini-map.hidden {
   display: none;
 }
 
+.mini-map-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .mini-map-title {
   font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 1.5px;
+  font-size: 10px;
+  letter-spacing: 2px;
   color: var(--accent);
-  margin-bottom: 6px;
+  text-transform: uppercase;
+  margin: 0;
 }
 
 #miniMapCanvas {
   display: block;
-  width: 100%;
-  height: auto;
+  width: 300px;  /* Kích thước hiển thị cố định */
+  height: 300px; /* Kích thước hiển thị cố định */
   border: 1px solid var(--border2);
-  background: #f8fbff;
+  background: #000;
   cursor: crosshair;
+  /* Ngăn chặn các thao tác mặc định của trình duyệt để JS xử lý Zoom/Pan/Drag */
+  touch-action: none; 
+  image-rendering: pixelated; /* Giúp fractal trông sắc nét hơn khi zoom */
 }
 
 #miniMapCanvas:hover {
   border-color: var(--accent);
-  box-shadow: var(--glow-sm);
 }
 
 .mini-map-note {
-  margin-top: 6px;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-dim);
+  background: var(--bg2);
+  padding: 4px 8px;
+  border-radius: 2px;
+  text-align: center;
 }
 
 .mini-map-hint {
-  margin-top: 4px;
   font-family: var(--font-mono);
   font-size: 9px;
-  color: var(--accent);
-  opacity: 0.75;
-  letter-spacing: 0.4px;
+  color: var(--text-dim);
+  opacity: 0.8;
   text-align: center;
+  line-height: 1.4;
+}
+
+.mini-map-hint b {
+  color: var(--accent2);
 }
 
 .canvas-label {
@@ -438,23 +456,31 @@ footer {
 .footer-sep { color: var(--border); }
 
 /* ─── RESPONSIVE ─────────────────────────────────────────────────────── */
-@media (max-width: 900px) {
-  main { grid-template-columns: 1fr; grid-template-rows: auto 1fr; overflow: auto; }
-  .control-panel { border-right: none; border-bottom: 1px solid var(--border); }
-  .canvas-wrapper { width: min(100%, 90vw); }
+@media (max-width: 1100px) {
+  /* Khi màn hình bắt đầu hẹp, thu nhỏ mini-map một chút để không lấn át canvas chính */
   .mini-map {
-    right: 10px;
-    bottom: 10px;
-    width: 154px;
-    padding: 6px;
+    width: 222px;
   }
-  .mini-map-title {
-    font-size: 8px;
-    margin-bottom: 4px;
+  #miniMapCanvas {
+    width: 200px;
+    height: 200px;
   }
-  .mini-map-note {
-    margin-top: 4px;
-    font-size: 9px;
+}
+
+@media (max-width: 900px) {
+  main { 
+    grid-template-columns: 1fr; 
+    grid-template-rows: auto 1fr; 
+    overflow: auto; 
+  }
+  .canvas-row {
+    flex-direction: column; /* Xếp chồng lên nhau trên mobile */
+    padding-bottom: 40px;
+  }
+  .mini-map {
+    width: 90%;
+    max-width: 322px;
+    margin: 0 auto;
   }
 }
 
