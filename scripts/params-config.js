@@ -101,16 +101,6 @@ const FRACTAL_PARAMS = {
         id: 'mandel_iter',
         name: 'Max Iterations',
         type: 'range', min: 50, max: 1000, step: 50, default: 200
-      },
-      {
-        id: 'mandel_cx',
-        name: 'Center X',
-        type: 'range', min: -2.5, max: 1.0, step: 0.001, default: -0.5
-      },
-      {
-        id: 'mandel_cy',
-        name: 'Center Y',
-        type: 'range', min: -1.5, max: 1.5, step: 0.001, default: 0.0
       }
     ]
   },

@@ -380,7 +380,6 @@
         document.body.classList.remove('rendering');
         const finalLabel = entry.levelKey ? `${entry.label} — LEVEL ${Math.round(params[entry.levelKey])}` : entry.label;
         UI.setCanvasLabel(finalLabel, true);
-        UI.setStats(entry.type || fractalKey.toUpperCase(), res);
         hasRendered = true;
         lastFractalKey = fractalKey;
       };

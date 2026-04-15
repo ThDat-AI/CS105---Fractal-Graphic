@@ -9,8 +9,6 @@ const UI = (() => {
   const resetBtn         = document.getElementById('resetBtn');
   const canvasOverlay    = document.getElementById('canvasOverlay');
   const canvasLabel      = document.getElementById('canvasLabel');
-  const statType         = document.getElementById('statType');
-  const statIter         = document.getElementById('statIter');
 
   let _onRender = null; // callback được set từ init()
 
@@ -119,11 +117,6 @@ const UI = (() => {
     return result;
   }
 
-  function setStats(type, verts) {
-    statType.textContent = type !== null ? type : '—';
-    statIter.textContent = verts !== null ? verts : '—';
-  }
-
   function setCanvasLabel(text, active = false) {
     canvasLabel.textContent = text;
     canvasLabel.className   = 'canvas-label' + (active ? ' active' : '');
@@ -159,5 +152,5 @@ const UI = (() => {
     });
   }
 
-  return { init, getParams, setStats, setCanvasLabel, showOverlay, hideOverlay };
+  return { init, getParams, setCanvasLabel, showOverlay, hideOverlay };
 })();
