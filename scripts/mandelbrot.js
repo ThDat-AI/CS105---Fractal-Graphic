@@ -11,12 +11,24 @@ const MandelbrotRenderer = (() => {
 
   const FS_SRC = `
     precision mediump float;
+    const float PI2 = 6.28318530718;
+
     uniform vec2 u_resolution;
     uniform vec2 u_center;
     uniform float u_scale;
     uniform int u_maxIter;
     uniform vec3 u_colorA;
     uniform vec3 u_bgColor;
+    uniform vec3 u_palBase;
+    uniform vec3 u_palAmp;
+    uniform vec3 u_palFreq;
+    uniform vec3 u_palPhase;
+    uniform float u_smoothStrength;
+    uniform float u_gamma;
+
+    vec3 cosinePalette(float t) {
+      return u_palBase + u_palAmp * cos(PI2 * (u_palFreq * t + u_palPhase));
+    }
 
     void main() {
       vec2 uv = (gl_FragCoord.xy / u_resolution) * 2.0 - 1.0;
@@ -38,9 +50,23 @@ const MandelbrotRenderer = (() => {
         iter += 1.0;
       }
 
-      float t = iter >= float(u_maxIter) ? 0.0 : iter / float(u_maxIter);
-      vec3 color = mix(u_bgColor, u_colorA, sqrt(t));
-      if (iter >= float(u_maxIter)) {
+      bool escaped = zx2 + zy2 > 4.0;
+      float smoothIter = iter;
+      if (escaped) {
+        float logZn = log(max(zx2 + zy2, 1.000001)) * 0.5;
+        float nu = log(logZn / log(2.0)) / log(2.0);
+        smoothIter = iter + 1.0 - nu;
+      }
+
+      float linearT = iter / float(u_maxIter);
+      float smoothT = clamp(smoothIter / float(u_maxIter), 0.0, 1.0);
+      float t = mix(linearT, smoothT, clamp(u_smoothStrength, 0.0, 1.0));
+
+      vec3 cosineColor = clamp(cosinePalette(t), 0.0, 1.0);
+      vec3 color = mix(u_colorA, cosineColor, 0.88);
+      color = pow(color, vec3(max(u_gamma, 0.001)));
+
+      if (!escaped) {
         color = u_bgColor;
       }
       gl_FragColor = vec4(color, 1.0);
@@ -85,8 +111,25 @@ const MandelbrotRenderer = (() => {
     const scale = 1.8 / (params.mandel_zoom || 1.0);
     const centerX = params.mandel_cx ?? -0.5;
     const centerY = params.mandel_cy ?? 0.0;
-    const fractalColor = WebGLUtils.hexToRgb(params.mandel_bg || '#0077cc');
+    const accentColor = WebGLUtils.hexToRgb(params.mandel_bg || '#0077cc');
     const bgColor = WebGLUtils.hexToRgb(params.mandel_color || '#ffffff');
+    const palBase = WebGLUtils.hexToRgb(params.mandel_pal_base || '#1f2a44');
+    const palAmp = WebGLUtils.hexToRgb(params.mandel_pal_amp || '#7ad8ff');
+    const palFreqBase = params.mandel_pal_freq ?? 1.0;
+    const palPhaseBase = params.mandel_pal_phase ?? 0.12;
+    const smoothStrength = params.mandel_smooth ?? 1.0;
+    const gamma = params.mandel_gamma ?? 0.88;
+
+    const palFreq = [
+      palFreqBase,
+      palFreqBase * 1.17,
+      palFreqBase * 1.31
+    ];
+    const palPhase = [
+      palPhaseBase,
+      (palPhaseBase + 0.15) % 1,
+      (palPhaseBase + 0.34) % 1
+    ];
 
     gl.clearColor(bgColor[0], bgColor[1], bgColor[2], 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -104,13 +147,25 @@ const MandelbrotRenderer = (() => {
     const uMaxIter = gl.getUniformLocation(program, 'u_maxIter');
     const uColorA = gl.getUniformLocation(program, 'u_colorA');
     const uBgColor = gl.getUniformLocation(program, 'u_bgColor');
+    const uPalBase = gl.getUniformLocation(program, 'u_palBase');
+    const uPalAmp = gl.getUniformLocation(program, 'u_palAmp');
+    const uPalFreq = gl.getUniformLocation(program, 'u_palFreq');
+    const uPalPhase = gl.getUniformLocation(program, 'u_palPhase');
+    const uSmoothStrength = gl.getUniformLocation(program, 'u_smoothStrength');
+    const uGamma = gl.getUniformLocation(program, 'u_gamma');
 
     gl.uniform2f(uResolution, canvas.width, canvas.height);
     gl.uniform2f(uCenter, centerX, centerY);
     gl.uniform1f(uScale, scale);
     gl.uniform1i(uMaxIter, maxIter);
-    gl.uniform3fv(uColorA, fractalColor);
+    gl.uniform3fv(uColorA, accentColor);
     gl.uniform3fv(uBgColor, bgColor);
+    gl.uniform3fv(uPalBase, palBase);
+    gl.uniform3fv(uPalAmp, palAmp);
+    gl.uniform3fv(uPalFreq, palFreq);
+    gl.uniform3fv(uPalPhase, palPhase);
+    gl.uniform1f(uSmoothStrength, smoothStrength);
+    gl.uniform1f(uGamma, gamma);
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     return maxIter;

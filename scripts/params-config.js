@@ -111,16 +111,6 @@ const FRACTAL_PARAMS = {
         id: 'mandel_cy',
         name: 'Center Y',
         type: 'range', min: -1.5, max: 1.5, step: 0.001, default: 0.0
-      },
-      {
-        id: 'mandel_bg',
-        name: 'Fractal Color',
-        type: 'color', default: '#0077cc'
-      },
-      {
-        id: 'mandel_color',
-        name: 'Background Color',
-        type: 'color', default: '#ffffff'
       }
     ]
   },
@@ -143,16 +133,6 @@ const FRACTAL_PARAMS = {
         id: 'julia_ci',
         name: 'C Imaginary (hằng số ảo)',
         type: 'range', min: -2.0, max: 2.0, step: 0.001, default: 0.27
-      },
-      {
-        id: 'julia_bg',
-        name: 'Fractal Color',
-        type: 'color', default: '#0077cc'
-      },
-      {
-        id: 'julia_color',
-        name: 'Background Color',
-        type: 'color', default: '#ffffff'
       }
     ]
   }
