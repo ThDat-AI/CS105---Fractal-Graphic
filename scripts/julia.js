@@ -1,5 +1,5 @@
 // scripts/julia.js
-// Vẽ Julia Set bằng WebGL
+// Vẽ Julia Set bằng WebGL - Đồng bộ màu sắc với MiniMap
 
 const JuliaRenderer = (() => {
   const VS_SRC = `
@@ -10,65 +10,40 @@ const JuliaRenderer = (() => {
   `;
 
   const FS_SRC = `
-    precision mediump float;
-    const float PI2 = 6.28318530718;
-
+    precision highp float;
     uniform vec2 u_resolution;
-    uniform vec2 u_c;
-    uniform vec2 u_center;
+    uniform vec2 u_c;          // Tọa độ số phức c (điểm chọn từ minimap)
+    uniform vec2 u_center;     // Tâm của view hiện tại (pan)
     uniform float u_scale;
     uniform int u_maxIter;
-    uniform vec3 u_colorA;
-    uniform vec3 u_bgColor;
-    uniform vec3 u_palBase;
-    uniform vec3 u_palAmp;
-    uniform vec3 u_palFreq;
-    uniform vec3 u_palPhase;
-    uniform float u_smoothStrength;
-    uniform float u_gamma;
-
-    vec3 cosinePalette(float t) {
-      return u_palBase + u_palAmp * cos(PI2 * (u_palFreq * t + u_palPhase));
-    }
 
     void main() {
+      // 1. Tính toán tọa độ
       vec2 uv = (gl_FragCoord.xy / u_resolution) * 2.0 - 1.0;
       uv.x *= u_resolution.x / u_resolution.y;
+      
       vec2 z = uv * u_scale + u_center;
       float iter = 0.0;
-      float zx = z.x;
-      float zy = z.y;
-      float zx2 = zx * zx;
-      float zy2 = zy * zy;
 
+      // 2. Vòng lặp Julia: z = z^2 + c
       for (int i = 0; i < 1000; i++) {
-        if (i >= u_maxIter || zx2 + zy2 > 4.0) break;
-        zy = 2.0 * zx * zy + u_c.y;
-        zx = zx2 - zy2 + u_c.x;
-        zx2 = zx * zx;
-        zy2 = zy * zy;
+        if (i >= u_maxIter) break;
+        z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + u_c;
+        if (length(z) > 2.0) break;
         iter += 1.0;
       }
 
-      bool escaped = zx2 + zy2 > 4.0;
-      float smoothIter = iter;
-      if (escaped) {
-        float logZn = log(max(zx2 + zy2, 1.000001)) * 0.5;
-        float nu = log(logZn / log(2.0)) / log(2.0);
-        smoothIter = iter + 1.0 - nu;
+      // 3. Phối màu ĐỒNG BỘ VỚI MINIMAP
+      vec3 color;
+      if (iter == float(u_maxIter)) {
+        // Màu Navy tối cho vùng bên trong tập hợp Julia
+        color = vec3(0.05, 0.1, 0.2); 
+      } else {
+        // Bảng màu Cosine Neon (giống MiniMap)
+        float t = iter * 0.15;
+        color = 0.5 + 0.5 * cos(3.0 + t + vec3(0.0, 0.6, 1.0));
       }
 
-      float linearT = iter / float(u_maxIter);
-      float smoothT = clamp(smoothIter / float(u_maxIter), 0.0, 1.0);
-      float t = mix(linearT, smoothT, clamp(u_smoothStrength, 0.0, 1.0));
-
-      vec3 cosineColor = clamp(cosinePalette(t), 0.0, 1.0);
-      vec3 color = mix(u_colorA, cosineColor, 0.88);
-      color = pow(color, vec3(max(u_gamma, 0.001)));
-
-      if (!escaped) {
-        color = u_bgColor;
-      }
       gl_FragColor = vec4(color, 1.0);
     }
   `;
@@ -85,17 +60,10 @@ const JuliaRenderer = (() => {
     program = WebGLUtils.createProgram(gl, VS_SRC, FS_SRC);
     if (!program) return false;
 
-    const vertices = new Float32Array([
-      -1.0, -1.0,
-       1.0, -1.0,
-      -1.0,  1.0,
-       1.0,  1.0
-    ]);
-
+    const vertices = new Float32Array([-1,-1, 1,-1, -1,1, 1,1]);
     quadBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-
     return true;
   }
 
@@ -107,69 +75,33 @@ const JuliaRenderer = (() => {
     WebGLUtils.resizeCanvas(canvas);
     gl.viewport(0, 0, canvas.width, canvas.height);
 
-    const maxIter = Math.round(params.julia_iter || 200);
-    const scale = 1.8 / (params.julia_zoom || 1.0);
+    // Đồng bộ các thông số kỹ thuật
+    const maxIter = Math.round(params.julia_iter || 150);
+    const scale = 1.5 / (params.julia_zoom || 1.0); // 1.5 để khớp tỷ lệ với MiniMap
     const cx = params.julia_cr ?? -0.7;
     const cy = params.julia_ci ?? 0.27;
     const centerX = params.julia_centerX || 0.0;
     const centerY = params.julia_centerY || 0.0;
-    const accentColor = WebGLUtils.hexToRgb(params.julia_bg || '#0077cc');
-    const bgColor = WebGLUtils.hexToRgb(params.julia_color || '#ffffff');
-    const palBase = WebGLUtils.hexToRgb(params.julia_pal_base || '#1a2340');
-    const palAmp = WebGLUtils.hexToRgb(params.julia_pal_amp || '#ffd36a');
-    const palFreqBase = params.julia_pal_freq ?? 1.0;
-    const palPhaseBase = params.julia_pal_phase ?? 0.08;
-    const smoothStrength = params.julia_smooth ?? 1.0;
-    const gamma = params.julia_gamma ?? 0.88;
-
-    const palFreq = [
-      palFreqBase,
-      palFreqBase * 1.17,
-      palFreqBase * 1.31
-    ];
-    const palPhase = [
-      palPhaseBase,
-      (palPhaseBase + 0.15) % 1,
-      (palPhaseBase + 0.34) % 1
-    ];
-
-    gl.clearColor(bgColor[0], bgColor[1], bgColor[2], 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
 
     gl.useProgram(program);
 
-    const aPos = gl.getAttribLocation(program, 'a_position');
-    gl.enableVertexAttribArray(aPos);
-    gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
-    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-
-    const uResolution = gl.getUniformLocation(program, 'u_resolution');
+    // Truyền Uniforms (đã lược bỏ các tham số màu thừa)
+    const uRes = gl.getUniformLocation(program, 'u_resolution');
     const uC = gl.getUniformLocation(program, 'u_c');
     const uCenter = gl.getUniformLocation(program, 'u_center');
     const uScale = gl.getUniformLocation(program, 'u_scale');
     const uMaxIter = gl.getUniformLocation(program, 'u_maxIter');
-    const uColorA = gl.getUniformLocation(program, 'u_colorA');
-    const uBgColor = gl.getUniformLocation(program, 'u_bgColor');
-    const uPalBase = gl.getUniformLocation(program, 'u_palBase');
-    const uPalAmp = gl.getUniformLocation(program, 'u_palAmp');
-    const uPalFreq = gl.getUniformLocation(program, 'u_palFreq');
-    const uPalPhase = gl.getUniformLocation(program, 'u_palPhase');
-    const uSmoothStrength = gl.getUniformLocation(program, 'u_smoothStrength');
-    const uGamma = gl.getUniformLocation(program, 'u_gamma');
 
-    gl.uniform2f(uResolution, canvas.width, canvas.height);
+    gl.uniform2f(uRes, canvas.width, canvas.height);
     gl.uniform2f(uC, cx, cy);
     gl.uniform2f(uCenter, centerX, centerY);
     gl.uniform1f(uScale, scale);
     gl.uniform1i(uMaxIter, maxIter);
-    gl.uniform3fv(uColorA, accentColor);
-    gl.uniform3fv(uBgColor, bgColor);
-    gl.uniform3fv(uPalBase, palBase);
-    gl.uniform3fv(uPalAmp, palAmp);
-    gl.uniform3fv(uPalFreq, palFreq);
-    gl.uniform3fv(uPalPhase, palPhase);
-    gl.uniform1f(uSmoothStrength, smoothStrength);
-    gl.uniform1f(uGamma, gamma);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
+    const aPos = gl.getAttribLocation(program, 'a_position');
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     return maxIter;
@@ -177,19 +109,13 @@ const JuliaRenderer = (() => {
 
   function renderAnimated(canvas, params, onDone) {
     if (animFrame) cancelAnimationFrame(animFrame);
-    if (!gl || !program) {
-      if (!init(canvas)) return;
-    }
-
-    const targetIter = Math.max(20, Math.round(params.julia_iter || 200));
-    const steps = 20;
-    const stepSize = Math.max(1, Math.floor(targetIter / steps));
-    let currentIter = Math.min(16, targetIter);
+    const targetIter = Math.max(20, Math.round(params.julia_iter || 150));
+    const stepSize = Math.max(1, Math.floor(targetIter / 15));
+    let currentIter = 20;
     const start = performance.now();
 
     function nextFrame() {
-      const tempParams = Object.assign({}, params, { julia_iter: currentIter });
-      render(canvas, tempParams);
+      render(canvas, Object.assign({}, params, { julia_iter: currentIter }));
       if (currentIter < targetIter) {
         currentIter = Math.min(targetIter, currentIter + stepSize);
         animFrame = requestAnimationFrame(nextFrame);
@@ -198,15 +124,11 @@ const JuliaRenderer = (() => {
         if (onDone) onDone(targetIter, (performance.now() - start).toFixed(0));
       }
     }
-
     animFrame = requestAnimationFrame(nextFrame);
   }
 
   function stop() {
-    if (animFrame) {
-      cancelAnimationFrame(animFrame);
-      animFrame = null;
-    }
+    if (animFrame) cancelAnimationFrame(animFrame);
   }
 
   return { init, render, renderAnimated, stop };

@@ -10,68 +10,44 @@ const MandelbrotRenderer = (() => {
   `;
 
   const FS_SRC = `
-    precision mediump float;
-    const float PI2 = 6.28318530718;
+      precision highp float; // Dùng highp cho mượt hơn
+      uniform vec2 u_resolution;
+      uniform vec2 u_center;
+      uniform float u_scale;
+      uniform int u_maxIter;
 
-    uniform vec2 u_resolution;
-    uniform vec2 u_center;
-    uniform float u_scale;
-    uniform int u_maxIter;
-    uniform vec3 u_colorA;
-    uniform vec3 u_bgColor;
-    uniform vec3 u_palBase;
-    uniform vec3 u_palAmp;
-    uniform vec3 u_palFreq;
-    uniform vec3 u_palPhase;
-    uniform float u_smoothStrength;
-    uniform float u_gamma;
+      void main() {
+        // 1. Tính toán tọa độ
+        vec2 uv = (gl_FragCoord.xy / u_resolution) * 2.0 - 1.0;
+        uv.x *= u_resolution.x / u_resolution.y;
+        
+        vec2 c = uv * u_scale + u_center;
+        vec2 z = vec2(0.0);
+        float iter = 0.0;
 
-    vec3 cosinePalette(float t) {
-      return u_palBase + u_palAmp * cos(PI2 * (u_palFreq * t + u_palPhase));
-    }
+        // 2. Vòng lặp Mandelbrot
+        for (int i = 0; i < 1000; i++) {
+          if (i >= u_maxIter) break;
+          z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + c;
+          if (length(z) > 2.0) break;
+          iter += 1.0;
+        }
 
-    void main() {
-      vec2 uv = (gl_FragCoord.xy / u_resolution) * 2.0 - 1.0;
-      uv.x *= u_resolution.x / u_resolution.y;
-      vec2 z = uv * u_scale + u_center;
-      vec2 c = z;
-      float iter = 0.0;
-      float zx = 0.0;
-      float zy = 0.0;
-      float zx2 = 0.0;
-      float zy2 = 0.0;
+        // 3. Tính toán màu sắc (ĐỒNG BỘ VỚI MINIMAP)
+        vec3 color;
+        if (iter == float(u_maxIter)) {
+          // Màu Navy tối cho vùng bên trong tập hợp
+          color = vec3(0.05, 0.1, 0.2); 
+        } else {
+          // Công thức màu cosine giống hệt MiniMap
+          // (3.0 là offset pha, 0.15 là tốc độ đổi màu)
+          float t = iter * 0.15;
+          color = 0.5 + 0.5 * cos(3.0 + t + vec3(0.0, 0.6, 1.0));
+        }
 
-      for (int i = 0; i < 1000; i++) {
-        if (i >= u_maxIter || zx2 + zy2 > 4.0) break;
-        zy = 2.0 * zx * zy + c.y;
-        zx = zx2 - zy2 + c.x;
-        zx2 = zx * zx;
-        zy2 = zy * zy;
-        iter += 1.0;
+        gl_FragColor = vec4(color, 1.0);
       }
-
-      bool escaped = zx2 + zy2 > 4.0;
-      float smoothIter = iter;
-      if (escaped) {
-        float logZn = log(max(zx2 + zy2, 1.000001)) * 0.5;
-        float nu = log(logZn / log(2.0)) / log(2.0);
-        smoothIter = iter + 1.0 - nu;
-      }
-
-      float linearT = iter / float(u_maxIter);
-      float smoothT = clamp(smoothIter / float(u_maxIter), 0.0, 1.0);
-      float t = mix(linearT, smoothT, clamp(u_smoothStrength, 0.0, 1.0));
-
-      vec3 cosineColor = clamp(cosinePalette(t), 0.0, 1.0);
-      vec3 color = mix(u_colorA, cosineColor, 0.88);
-      color = pow(color, vec3(max(u_gamma, 0.001)));
-
-      if (!escaped) {
-        color = u_bgColor;
-      }
-      gl_FragColor = vec4(color, 1.0);
-    }
-  `;
+    `;
 
   let gl = null;
   let program = null;
@@ -100,76 +76,40 @@ const MandelbrotRenderer = (() => {
   }
 
   function render(canvas, params) {
-    if (!gl || !program) {
-      if (!init(canvas)) return 0;
+      if (!gl || !program) {
+        if (!init(canvas)) return 0;
+      }
+
+      WebGLUtils.resizeCanvas(canvas);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+
+      // Đồng bộ các thông số zoom/vị trí
+      const maxIter = Math.round(params.mandel_iter || 100); // 100 giống minimap
+      const scale = 1.5 / (params.mandel_zoom || 1.0);      // Dùng 1.5 giống scale minimap
+      const centerX = params.mandel_cx ?? -0.5;
+      const centerY = params.mandel_cy ?? 0.0;
+
+      gl.useProgram(program);
+
+      // Truyền các Uniforms cần thiết
+      const uResolution = gl.getUniformLocation(program, 'u_resolution');
+      const uCenter = gl.getUniformLocation(program, 'u_center');
+      const uScale = gl.getUniformLocation(program, 'u_scale');
+      const uMaxIter = gl.getUniformLocation(program, 'u_maxIter');
+
+      gl.uniform2f(uResolution, canvas.width, canvas.height);
+      gl.uniform2f(uCenter, centerX, centerY);
+      gl.uniform1f(uScale, scale);
+      gl.uniform1i(uMaxIter, maxIter);
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
+      const aPos = gl.getAttribLocation(program, 'a_position');
+      gl.enableVertexAttribArray(aPos);
+      gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      return maxIter;
     }
-
-    WebGLUtils.resizeCanvas(canvas);
-    gl.viewport(0, 0, canvas.width, canvas.height);
-
-    const maxIter = Math.round(params.mandel_iter || 200);
-    const scale = 1.8 / (params.mandel_zoom || 1.0);
-    const centerX = params.mandel_cx ?? -0.5;
-    const centerY = params.mandel_cy ?? 0.0;
-    const accentColor = WebGLUtils.hexToRgb(params.mandel_bg || '#0077cc');
-    const bgColor = WebGLUtils.hexToRgb(params.mandel_color || '#ffffff');
-    const palBase = WebGLUtils.hexToRgb(params.mandel_pal_base || '#1f2a44');
-    const palAmp = WebGLUtils.hexToRgb(params.mandel_pal_amp || '#7ad8ff');
-    const palFreqBase = params.mandel_pal_freq ?? 1.0;
-    const palPhaseBase = params.mandel_pal_phase ?? 0.12;
-    const smoothStrength = params.mandel_smooth ?? 1.0;
-    const gamma = params.mandel_gamma ?? 0.88;
-
-    const palFreq = [
-      palFreqBase,
-      palFreqBase * 1.17,
-      palFreqBase * 1.31
-    ];
-    const palPhase = [
-      palPhaseBase,
-      (palPhaseBase + 0.15) % 1,
-      (palPhaseBase + 0.34) % 1
-    ];
-
-    gl.clearColor(bgColor[0], bgColor[1], bgColor[2], 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-
-    gl.useProgram(program);
-
-    const aPos = gl.getAttribLocation(program, 'a_position');
-    gl.enableVertexAttribArray(aPos);
-    gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
-    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-
-    const uResolution = gl.getUniformLocation(program, 'u_resolution');
-    const uCenter = gl.getUniformLocation(program, 'u_center');
-    const uScale = gl.getUniformLocation(program, 'u_scale');
-    const uMaxIter = gl.getUniformLocation(program, 'u_maxIter');
-    const uColorA = gl.getUniformLocation(program, 'u_colorA');
-    const uBgColor = gl.getUniformLocation(program, 'u_bgColor');
-    const uPalBase = gl.getUniformLocation(program, 'u_palBase');
-    const uPalAmp = gl.getUniformLocation(program, 'u_palAmp');
-    const uPalFreq = gl.getUniformLocation(program, 'u_palFreq');
-    const uPalPhase = gl.getUniformLocation(program, 'u_palPhase');
-    const uSmoothStrength = gl.getUniformLocation(program, 'u_smoothStrength');
-    const uGamma = gl.getUniformLocation(program, 'u_gamma');
-
-    gl.uniform2f(uResolution, canvas.width, canvas.height);
-    gl.uniform2f(uCenter, centerX, centerY);
-    gl.uniform1f(uScale, scale);
-    gl.uniform1i(uMaxIter, maxIter);
-    gl.uniform3fv(uColorA, accentColor);
-    gl.uniform3fv(uBgColor, bgColor);
-    gl.uniform3fv(uPalBase, palBase);
-    gl.uniform3fv(uPalAmp, palAmp);
-    gl.uniform3fv(uPalFreq, palFreq);
-    gl.uniform3fv(uPalPhase, palPhase);
-    gl.uniform1f(uSmoothStrength, smoothStrength);
-    gl.uniform1f(uGamma, gamma);
-
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    return maxIter;
-  }
 
   function renderAnimated(canvas, params, onDone) {
     if (animFrame) cancelAnimationFrame(animFrame);
