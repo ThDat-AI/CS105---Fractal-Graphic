@@ -78,18 +78,26 @@
 
     <!-- Canvas area -->
     <section class="canvas-section">
-      <div class="canvas-wrapper">
-        <canvas id="glCanvas"></canvas>
-        <div class="canvas-overlay" id="canvasOverlay">
-          <div class="overlay-text">
-            <div class="overlay-icon">◈</div>
-            <div>Chọn fractal và nhấn <strong>RENDER</strong></div>
+      <div class="canvas-row">
+        <div class="canvas-wrapper">
+          <canvas id="glCanvas"></canvas>
+          <div class="canvas-overlay" id="canvasOverlay">
+            <div class="overlay-text">
+              <div class="overlay-icon">◈</div>
+              <div>Chọn fractal và nhấn <strong>RENDER</strong></div>
+            </div>
           </div>
+          <div class="canvas-corner tl"></div>
+          <div class="canvas-corner tr"></div>
+          <div class="canvas-corner bl"></div>
+          <div class="canvas-corner br"></div>
         </div>
-        <div class="canvas-corner tl"></div>
-        <div class="canvas-corner tr"></div>
-        <div class="canvas-corner bl"></div>
-        <div class="canvas-corner br"></div>
+        <div class="mini-map hidden" id="miniMapPanel">
+          <div class="mini-map-title">JULIA C ON MANDELBROT</div>
+          <canvas id="miniMapCanvas" width="180" height="180"></canvas>
+          <div class="mini-map-note" id="miniMapNote">c = (-0.700, 0.270)</div>
+          <div class="mini-map-hint">▸ click để hiện Julia tại điểm c</div>
+        </div>
       </div>
       <div class="canvas-label" id="canvasLabel">NO SIGNAL</div>
     </section>

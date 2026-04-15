@@ -4,6 +4,15 @@
 (function () {
   const canvas = document.getElementById('glCanvas');
   const canvasWrapper = canvas.parentElement;
+  const miniMapPanel = document.getElementById('miniMapPanel');
+  const miniMapCanvas = document.getElementById('miniMapCanvas');
+  const miniMapNote = document.getElementById('miniMapNote');
+
+  const miniMapState = {
+    bounds: { minX: -2.5, maxX: 1.0, minY: -1.5, maxY: 1.5 },
+    baseImage: null,
+    prepared: false
+  };
 
   const viewState = {
     mandelbrot: { zoom: 1.0, centerX: -0.5, centerY: 0.0 },
@@ -17,6 +26,122 @@
   let isPanning = false;
   let panAnchor = { x: 0, y: 0 };
   let panStart = { x: 0, y: 0 };
+
+  function isInMainCardioidOrBulb(cx, cy) {
+    const x = cx - 0.25;
+    const q = x * x + cy * cy;
+    const inCardioid = q * (q + x) < 0.25 * cy * cy;
+    const inPeriod2Bulb = (cx + 1.0) * (cx + 1.0) + cy * cy < 0.0625;
+    return inCardioid || inPeriod2Bulb;
+  }
+
+  function escapeIterations(cx, cy, maxIter) {
+    if (isInMainCardioidOrBulb(cx, cy)) return maxIter;
+    let zx = 0;
+    let zy = 0;
+    let zx2 = 0;
+    let zy2 = 0;
+    let iter = 0;
+
+    while (iter < maxIter && zx2 + zy2 <= 4.0) {
+      zy = 2.0 * zx * zy + cy;
+      zx = zx2 - zy2 + cx;
+      zx2 = zx * zx;
+      zy2 = zy * zy;
+      iter++;
+    }
+    return iter;
+  }
+
+  function buildMiniMapBase() {
+    if (!miniMapCanvas) return;
+    const ctx = miniMapCanvas.getContext('2d');
+    if (!ctx) return;
+
+    const w = miniMapCanvas.width;
+    const h = miniMapCanvas.height;
+    const img = ctx.createImageData(w, h);
+    const maxIter = 64;
+    const { minX, maxX, minY, maxY } = miniMapState.bounds;
+
+    for (let py = 0; py < h; py++) {
+      for (let px = 0; px < w; px++) {
+        const tx = px / (w - 1);
+        const ty = py / (h - 1);
+        const cx = minX + tx * (maxX - minX);
+        const cy = maxY - ty * (maxY - minY);
+        const it = escapeIterations(cx, cy, maxIter);
+        const i = (py * w + px) * 4;
+
+        if (it >= maxIter) {
+          img.data[i] = 10;
+          img.data[i + 1] = 16;
+          img.data[i + 2] = 30;
+        } else {
+          const t = it / maxIter;
+          img.data[i] = Math.round(25 + 210 * t);
+          img.data[i + 1] = Math.round(30 + 120 * t * t);
+          img.data[i + 2] = Math.round(60 + 185 * (1.0 - t));
+        }
+        img.data[i + 3] = 255;
+      }
+    }
+
+    miniMapState.baseImage = img;
+    miniMapState.prepared = true;
+  }
+
+  function mapComplexToMiniMap(cx, cy) {
+    const { minX, maxX, minY, maxY } = miniMapState.bounds;
+    const tx = (cx - minX) / (maxX - minX);
+    const ty = 1.0 - (cy - minY) / (maxY - minY);
+    return {
+      x: tx * miniMapCanvas.width,
+      y: ty * miniMapCanvas.height,
+      visible: tx >= 0 && tx <= 1 && ty >= 0 && ty <= 1
+    };
+  }
+
+  function drawMiniMapForJulia(cReal, cImag) {
+    if (!miniMapPanel || !miniMapCanvas) return;
+    if (!miniMapState.prepared) {
+      buildMiniMapBase();
+      if (!miniMapState.prepared) return;
+    }
+
+    const ctx = miniMapCanvas.getContext('2d');
+    if (!ctx) return;
+    ctx.putImageData(miniMapState.baseImage, 0, 0);
+
+    const p = mapComplexToMiniMap(cReal, cImag);
+    const markerX = Math.max(0, Math.min(miniMapCanvas.width, p.x));
+    const markerY = Math.max(0, Math.min(miniMapCanvas.height, p.y));
+
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(markerX - 8, markerY);
+    ctx.lineTo(markerX + 8, markerY);
+    ctx.moveTo(markerX, markerY - 8);
+    ctx.lineTo(markerX, markerY + 8);
+    ctx.stroke();
+
+    ctx.lineWidth = 2.0;
+    ctx.strokeStyle = '#ff4d4f';
+    ctx.beginPath();
+    ctx.arc(markerX, markerY, 4.5, 0, Math.PI * 2);
+    ctx.stroke();
+
+    if (miniMapNote) {
+      const outOfRange = p.visible ? '' : ' (ngoài khung)';
+      miniMapNote.textContent = `c = (${cReal.toFixed(3)}, ${cImag.toFixed(3)})${outOfRange}`;
+    }
+    miniMapPanel.classList.remove('hidden');
+  }
+
+  function hideMiniMap() {
+    if (miniMapPanel) miniMapPanel.classList.add('hidden');
+  }
 
   function fitCanvas() {
     const wrapper = canvas.parentElement;
@@ -237,6 +362,10 @@
     params = getRenderParams(fractalKey, params);
     stopAllRenderers();
 
+    if (fractalKey !== 'julia') {
+      hideMiniMap();
+    }
+
     // ================= KOCH =================
     if (fractalKey === 'koch') {
       UI.hideOverlay();
@@ -333,6 +462,12 @@
       const title = fractalKey === 'mandelbrot' ? 'TẬP MANDELBROT' : 'TẬP JULIA';
       const typeTag = fractalKey === 'mandelbrot' ? 'MANDEL' : 'JULIA';
 
+      if (fractalKey === 'julia') {
+        const cReal = params.julia_cr ?? -0.7;
+        const cImag = params.julia_ci ?? 0.27;
+        drawMiniMapForJulia(cReal, cImag);
+      }
+
       UI.hideOverlay();
       UI.setCanvasLabel('RENDERING…');
       document.body.classList.add('rendering');
@@ -414,6 +549,7 @@
     UI.showOverlay();
     UI.setCanvasLabel('NO SIGNAL');
     UI.setStats(null, null);
+    hideMiniMap();
 
     fitCanvas();
     resetViewState(document.getElementById('fractalSelect').value);
@@ -450,6 +586,34 @@
   // Auto-render initial fractal on page load
   const initialKey = document.getElementById('fractalSelect').value;
   handleRender(initialKey, UI.getParams(initialKey), true);
+
+  // ── Click minimap → render Julia at that c value ──────────────────
+  miniMapCanvas.addEventListener('click', function (event) {
+    const rect = miniMapCanvas.getBoundingClientRect();
+    const px = (event.clientX - rect.left) * (miniMapCanvas.width / rect.width);
+    const py = (event.clientY - rect.top) * (miniMapCanvas.height / rect.height);
+
+    const { minX, maxX, minY, maxY } = miniMapState.bounds;
+    const cReal = minX + (px / miniMapCanvas.width) * (maxX - minX);
+    const cImag = maxY - (py / miniMapCanvas.height) * (maxY - minY);
+
+    // Switch selector to Julia (triggers buildParams in UI)
+    const selectEl = document.getElementById('fractalSelect');
+    selectEl.value = 'julia';
+    selectEl.dispatchEvent(new Event('change'));
+
+    // Set slider values (buildParams is synchronous so inputs exist now)
+    const crInput = document.getElementById('julia_cr');
+    const ciInput = document.getElementById('julia_ci');
+    const crVal   = document.getElementById('val_julia_cr');
+    const ciVal   = document.getElementById('val_julia_ci');
+
+    if (crInput) { crInput.value = cReal.toFixed(3); if (crVal) crVal.textContent = crInput.value; }
+    if (ciInput) { ciInput.value = cImag.toFixed(3); if (ciVal) ciVal.textContent = ciInput.value; }
+
+    handleRender('julia', UI.getParams('julia'), false);
+    drawMiniMapForJulia(cReal, cImag);
+  });
 
   console.log(
     '%c[FRACTAL ENGINE]%c WebGL ready.',

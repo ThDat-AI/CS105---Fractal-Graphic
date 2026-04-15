@@ -299,9 +299,20 @@ input[type="color"]:hover { border-color: var(--accent); }
 .canvas-section {
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
+  flex: 1 1 0;
   padding: 24px; gap: 12px;
   background: var(--bg);
   overflow: hidden;
+}
+
+/* Row that holds the main canvas + side minimap */
+.canvas-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
 }
 
 .canvas-wrapper {
@@ -351,6 +362,61 @@ canvas#glCanvas {
   50%      { opacity: 1;  transform: scale(1.08); }
 }
 
+.mini-map {
+  position: relative;
+  width: 210px;
+  flex-shrink: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 4px 14px rgba(0, 60, 120, 0.16);
+  backdrop-filter: blur(2px);
+  border-radius: 3px;
+}
+
+.mini-map.hidden {
+  display: none;
+}
+
+.mini-map-title {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+#miniMapCanvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border2);
+  background: #f8fbff;
+  cursor: crosshair;
+}
+
+#miniMapCanvas:hover {
+  border-color: var(--accent);
+  box-shadow: var(--glow-sm);
+}
+
+.mini-map-note {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.mini-map-hint {
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--accent);
+  opacity: 0.75;
+  letter-spacing: 0.4px;
+  text-align: center;
+}
+
 .canvas-label {
   font-family: var(--font-mono); font-size: 11px;
   letter-spacing: 4px; color: var(--text-dim);
@@ -376,6 +442,20 @@ footer {
   main { grid-template-columns: 1fr; grid-template-rows: auto 1fr; overflow: auto; }
   .control-panel { border-right: none; border-bottom: 1px solid var(--border); }
   .canvas-wrapper { width: min(100%, 90vw); }
+  .mini-map {
+    right: 10px;
+    bottom: 10px;
+    width: 154px;
+    padding: 6px;
+  }
+  .mini-map-title {
+    font-size: 8px;
+    margin-bottom: 4px;
+  }
+  .mini-map-note {
+    margin-top: 4px;
+    font-size: 9px;
+  }
 }
 
 /* ─── LOADING STATE ──────────────────────────────────────────────────── */
