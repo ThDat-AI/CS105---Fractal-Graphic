@@ -79,19 +79,28 @@
     <!-- Canvas area -->
     <section class="canvas-section">
       <div class="canvas-row">
-        <div class="canvas-wrapper">
-          <canvas id="glCanvas"></canvas>
-          <div class="canvas-overlay" id="canvasOverlay">
-            <div class="overlay-text">
-              <div class="overlay-icon">◈</div>
-              <div>Chọn fractal và nhấn <strong>RENDER</strong></div>
+        
+        <!-- Cột bên trái: Chứa Canvas chính và Label bên dưới nó -->
+        <div class="main-render-column">
+          <div class="canvas-wrapper">
+            <canvas id="glCanvas"></canvas>
+            <div class="canvas-overlay" id="canvasOverlay">
+              <div class="overlay-text">
+                <div class="overlay-icon">◈</div>
+                <div>Chọn fractal và nhấn <strong>RENDER</strong></div>
+              </div>
             </div>
+            <div class="canvas-corner tl"></div>
+            <div class="canvas-corner tr"></div>
+            <div class="canvas-corner bl"></div>
+            <div class="canvas-corner br"></div>
           </div>
-          <div class="canvas-corner tl"></div>
-          <div class="canvas-corner tr"></div>
-          <div class="canvas-corner bl"></div>
-          <div class="canvas-corner br"></div>
+          
+          <!-- Label bây giờ nằm ở đây để luôn đi theo canvas chính -->
+          <div class="canvas-label" id="canvasLabel">NO SIGNAL</div>
         </div>
+
+        <!-- Cột bên phải: Mini Map -->
         <div id="miniMapPanel" class="mini-map hidden">
           <div class="mini-map-header">
             <h3 class="mini-map-title">Mandelbrot Navigator</h3>
@@ -102,8 +111,8 @@
             <b>L-Drag:</b> Chọn C | <b>R-Pan:</b> Di chuyển | <b>Wheel:</b> Phóng to
           </div>
         </div>
+
       </div>
-      <div class="canvas-label" id="canvasLabel">NO SIGNAL</div>
     </section>
   </main>
 

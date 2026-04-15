@@ -296,6 +296,14 @@ input[type="color"]:hover { border-color: var(--accent); }
 }
 
 /* ─── CANVAS SECTION ─────────────────────────────────────────────────── */
+.main-render-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px; /* Khoảng cách giữa canvas và chữ NO SIGNAL */
+  flex: 0 1 auto;
+}
+
 .canvas-section {
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
@@ -309,9 +317,9 @@ input[type="color"]:hover { border-color: var(--accent); }
 .canvas-row {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start; /* Để mini-map canh lề trên cùng hàng với canvas */
   justify-content: center;
-  gap: 14px;
+  gap: 20px;
   width: 100%;
 }
 
@@ -436,9 +444,13 @@ canvas#glCanvas {
 }
 
 .canvas-label {
-  font-family: var(--font-mono); font-size: 11px;
-  letter-spacing: 4px; color: var(--text-dim);
+  margin-top: 5px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 4px;
+  color: var(--text-dim);
   text-align: center;
+  text-transform: uppercase;
 }
 .canvas-label.active { color: var(--accent3); }
 
